@@ -26,11 +26,58 @@ class Drone(object):
         self.state_lim_high = np.array([1000, 1000, 1000, 100, 100, 100, 100, 100, 100, 10*2*np.pi, 10*2*np.pi, 10*2*np.pi])
 
     def reset(self):
+        """
+        to be done
+        """
 
 
     def df(self,state,u):
 
+        F, M1, M2, M3 = u
+        pos = state[0:2]
+        vel = state[3:5]
+        att_q = state[6:9]
+        att_rate = state[10:12]
+
+        R_w2b = self.quat2rot(att_q)
+        R_b2w = R_w2b.transpose()
+
+        F_b = np.array([0, 0, F])
+        acc = 1.0 / self.mass * ( np.dot(R_b2w, F_b) - np.array([0, 0, self.mass*self.gravity]))
+
+        K_quat = 2.0
+        e_quat = 1.0 - np.sum(att_q**2)
+        q_sk = np.array([[0, -att_rate[0], -att_rate[1], -att_rate[2]],
+                                    [att_rate[0], 0, -att_rate[1], att_rate[2]],
+                                    [att_rate[1], att_rate[2], 0, -att_rate[0]],
+                                    [att_rate[2], -att_rate[1], att_rate[0], 0]]) * att_q +
+
+        q_dot = -0.5 * q_sk * att_q + K_quat * e_quat * att_q
+
+        att_acc =
 
     def step(self,state,u):
 
 
+    @staticmethod
+    def quat2rot(quat):
+        """
+        Quaternion 2 Rotation Matrix
+        :param quat:attitude quaternion
+        :return: Rotation Matrix
+        """
+        #  quat = np.zeros(4)
+        R = np.zeros((3,3))
+
+        quat_n = quat / np.linalg.norm(quat)
+        qa_hat = np.zeros((2,1))
+        qa_hat[0, 1] = -quat[3]
+        qa_hat[0, 2] = quat[2]
+        qa_hat[1, 2] = -quat[1]
+        qa_hat[1, 0] = quat[3]
+        qa_hat[2, 0] = -quat[2]
+        qa_hat[2, 1] = quat[1]
+
+        R = np.eye(3) + 2 * qa_hat * qa_hat + 2*quat[0]*qa_hat
+
+        return R
