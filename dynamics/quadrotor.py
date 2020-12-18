@@ -6,10 +6,10 @@ class Drone():
     """Quadrotor class"""
 
     def __init__(self):
-        self.dt = 0.02
+        self.dt = 0.01
         self.t0 = 0
         self.t = self.t0
-        self.tf = 10
+        # self.tf = 0.1
 
         self.gravity = 9.8
         self.mass = 2.0
@@ -36,11 +36,11 @@ class Drone():
 
     def reset(self):
         """
-        to be done
+        Reset state, control and integrator
         """
         self.state = self.initial_state
         self.u = np.zeros(self.dim_u)
-        self.integrator = RK45(self.f, self.t0, self.state, self.tf)
+        self.integrator = RK45(self.f, self.t0, self.state, self.dt)
         # return self.state
 
     def df(self, state, u):
@@ -66,9 +66,9 @@ class Drone():
                          [att_rate[1], att_rate[2], 0, -att_rate[0]],
                          [att_rate[2], -att_rate[1], att_rate[0], 0]])
 
-        q_dot = -0.5 * q_sk * att_q + K_quat * e_quat * att_q
+        q_dot = -0.5 * (q_sk @ att_q) + K_quat * e_quat * att_q
 
-        att_acc = np.linalg.inv(self.Inertia) @ (M - np.outer(att_rate, self.Inertia @ att_rate))
+        att_acc = np.linalg.inv(self.Inertia) @ (M - np.cross(att_rate, (self.Inertia @ att_rate)))
 
         dstate = np.zeros(self.dim_state)
         dstate[0:3] = vel
@@ -88,7 +88,7 @@ class Drone():
             self.integrator.step()
         self.state = self.integrator.y
         self.u = u
-        self.integrator = RK45(self.f, self.integrator.t, self.state, self.integrator.t + self.tf)
+        self.integrator = RK45(self.f, self.integrator.t, self.state, self.integrator.t + self.dt)
 
         return self.state
 
@@ -107,7 +107,7 @@ class Drone():
 
         quat_n = quat / np.linalg.norm(quat)
         qa_hat = np.zeros((3, 3))
-        print(quat_n)
+        # print(quat_n)
         qa_hat[0, 1] = -quat_n[3]
         qa_hat[0, 2] = quat_n[2]
         qa_hat[1, 2] = -quat_n[1]
