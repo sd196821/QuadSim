@@ -16,9 +16,9 @@ class Drone(object):
 
         self.gravity = 9.8
         self.mass = 2.0
-        self.Inertia = np.array([[10, 0, 0],
-                                 [0, 10, 0],
-                                 [0, 0, 10]])
+        self.Inertia = np.array([[0.1, 0, 0],
+                                 [0, 0.1, 0],
+                                 [0, 0, 0.01]])
         self.arm_length = 0.5
 
         self.dim_state = 13  # x,y,z,vx,vy,vz,q1,q2,q3,q4,w1,w2,w3
@@ -86,11 +86,10 @@ class Drone(object):
         while not (self.integrator.status == 'finished'):
             self.integrator.step()
         self.state = self.integrator.y
-        u = self.u
+        self.u = u
         self.integrator = RK45(self.f, self.integrator.t, self.state, self.integrator.t+self.tf)
 
         return self.state
-
 
     @staticmethod
     def quat2rot(quat):
