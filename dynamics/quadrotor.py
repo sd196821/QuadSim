@@ -1,5 +1,5 @@
 import numpy as np
-import scipy
+from scipy.integrate import RK45
 
 
 class Drone(object):
@@ -8,6 +8,11 @@ class Drone(object):
     def __init__(self):
 
         self.dt = 0.02
+        self.t0 = 0
+        self.t = self.t0
+        self.tf = 10
+
+        self.integrator = None
 
         self.gravity = 9.8
         self.mass = 2.0
@@ -20,21 +25,23 @@ class Drone(object):
         self.dim_u = 4
 
         self.state = np.zeros(shape=self.dim_state)
+        self.initial_state = np.zeros(self.dim_state)
+
         self.u = np.zeros(shape=self.dim_u)
 
         self.state_lim_low = np.array([-1000, -1000, 0, -100, -100, -100, -100, -100, -100, -10*2*np.pi, -10*2*np.pi, -10*2*np.pi])
         self.state_lim_high = np.array([1000, 1000, 1000, 100, 100, 100, 100, 100, 100, 10*2*np.pi, 10*2*np.pi, 10*2*np.pi])
-
-        self.initial_state = np.zeros(self.dim_state)
 
     def reset(self):
         """
         to be done
         """
         self.state = self.initial_state
+        self.u = np.zeros(self.dim_u)
+        self.integrator = RK45(self.f, self.t0, self.state, self.tf)
+        # return self.state
 
-
-    def df(self,state,u):
+    def df(self, state, u):
 
         #  F, M1, M2, M3 = u
         F = u[0]
@@ -70,7 +77,19 @@ class Drone(object):
 
         return dstate
 
-    def step(self,state,u):
+    def f(self, t, df):
+        t = self.t
+        df = self.df(self.state, self.u)
+        return df
+
+    def step(self, state, u):
+        while not (self.integrator.status == 'finished'):
+            self.integrator.step()
+        self.state = self.integrator.y
+        u = self.u
+        self.integrator = RK45(self.f, self.integrator.t, self.state, self.integrator.t+self.tf)
+
+        return self.state
 
 
     @staticmethod
@@ -81,16 +100,16 @@ class Drone(object):
         :return: Rotation Matrix
         """
         #  quat = np.zeros(4)
-        R = np.zeros((3,3))
+        R = np.zeros((3, 3))
 
         quat_n = quat / np.linalg.norm(quat)
-        qa_hat = np.zeros((2,1))
-        qa_hat[0, 1] = -quat[3]
-        qa_hat[0, 2] = quat[2]
-        qa_hat[1, 2] = -quat[1]
-        qa_hat[1, 0] = quat[3]
-        qa_hat[2, 0] = -quat[2]
-        qa_hat[2, 1] = quat[1]
+        qa_hat = np.zeros((2, 1))
+        qa_hat[0, 1] = -quat_n[3]
+        qa_hat[0, 2] = quat_n[2]
+        qa_hat[1, 2] = -quat_n[1]
+        qa_hat[1, 0] = quat_n[3]
+        qa_hat[2, 0] = -quat_n[2]
+        qa_hat[2, 1] = quat_n[1]
 
         R = np.eye(3) + 2 * qa_hat * qa_hat + 2*quat[0]*qa_hat
 
