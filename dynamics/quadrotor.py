@@ -53,7 +53,7 @@ class Drone(object):
         q_sk = np.array([[0, -att_rate[0], -att_rate[1], -att_rate[2]],
                                     [att_rate[0], 0, -att_rate[1], att_rate[2]],
                                     [att_rate[1], att_rate[2], 0, -att_rate[0]],
-                                    [att_rate[2], -att_rate[1], att_rate[0], 0]]) * att_q +
+                                    [att_rate[2], -att_rate[1], att_rate[0], 0]])
 
         q_dot = -0.5 * q_sk * att_q + K_quat * e_quat * att_q
 
