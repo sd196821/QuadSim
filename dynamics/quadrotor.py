@@ -57,7 +57,7 @@ class Drone(object):
 
         q_dot = -0.5 * q_sk * att_q + K_quat * e_quat * att_q
 
-        att_acc = self.Inertia.T @ (M - np.outer(att_rate, self.Inertia@att_rate))
+        att_acc = np.linalg.inv(self.Inertia) @ (M - np.outer(att_rate, self.Inertia@att_rate))
 
         dstate = np.zeros(self.dim_state)
         dstate[0:2] = vel
