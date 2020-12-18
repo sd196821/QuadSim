@@ -11,8 +11,6 @@ class Drone():
         self.t = self.t0
         self.tf = 10
 
-        self.integrator = None
-
         self.gravity = 9.8
         self.mass = 2.0
         self.Inertia = np.array([[0.1, 0, 0],
@@ -25,6 +23,7 @@ class Drone():
 
         self.state = np.zeros(shape=self.dim_state)
         self.initial_state = np.zeros(self.dim_state)
+        self.initial_state[6] = 1.0
 
         self.u = np.zeros(shape=self.dim_u)
 
@@ -32,6 +31,8 @@ class Drone():
             [-1000, -1000, 0, -100, -100, -100, -100, -100, -100, -10 * 2 * np.pi, -10 * 2 * np.pi, -10 * 2 * np.pi])
         self.state_lim_high = np.array(
             [1000, 1000, 1000, 100, 100, 100, 100, 100, 100, 10 * 2 * np.pi, 10 * 2 * np.pi, 10 * 2 * np.pi])
+
+        self.integrator = None  # RK45(self.f, self.t0, self.state, self.tf)
 
     def reset(self):
         """
@@ -45,12 +46,12 @@ class Drone():
     def df(self, state, u):
         #  F, M1, M2, M3 = u
         F = u[0]
-        M = u[1:3]
+        M = u[1:]
 
-        pos = state[0:2]
-        vel = state[3:5]
-        att_q = state[6:9]
-        att_rate = state[10:12]
+        pos = state[0:3]
+        vel = state[3:6]
+        att_q = state[6:10]
+        att_rate = state[10:]
 
         R_w2b = self.quat2rot(att_q)
         R_b2w = R_w2b.transpose()
@@ -70,10 +71,10 @@ class Drone():
         att_acc = np.linalg.inv(self.Inertia) @ (M - np.outer(att_rate, self.Inertia @ att_rate))
 
         dstate = np.zeros(self.dim_state)
-        dstate[0:2] = vel
-        dstate[3:5] = acc
-        dstate[6:9] = q_dot
-        dstate[10:12] = att_acc
+        dstate[0:3] = vel
+        dstate[3:6] = acc
+        dstate[6:10] = q_dot
+        dstate[10:] = att_acc
 
         return dstate
 
@@ -82,13 +83,16 @@ class Drone():
         df = self.df(self.state, self.u)
         return df
 
-    def step(self, state, u):
+    def step(self, u):
         while not (self.integrator.status == 'finished'):
             self.integrator.step()
         self.state = self.integrator.y
         self.u = u
         self.integrator = RK45(self.f, self.integrator.t, self.state, self.integrator.t + self.tf)
 
+        return self.state
+
+    def get_state(self):
         return self.state
 
     @staticmethod
@@ -98,11 +102,12 @@ class Drone():
         :param quat:attitude quaternion
         :return: Rotation Matrix
         """
-        #  quat = np.zeros(4)
+        quat_n = np.zeros(4)
         R = np.zeros((3, 3))
 
         quat_n = quat / np.linalg.norm(quat)
-        qa_hat = np.zeros((2, 1))
+        qa_hat = np.zeros((3, 3))
+        print(quat_n)
         qa_hat[0, 1] = -quat_n[3]
         qa_hat[0, 2] = quat_n[2]
         qa_hat[1, 2] = -quat_n[1]
