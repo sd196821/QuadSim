@@ -25,10 +25,13 @@ class Drone(object):
         self.state_lim_low = np.array([-1000, -1000, 0, -100, -100, -100, -100, -100, -100, -10*2*np.pi, -10*2*np.pi, -10*2*np.pi])
         self.state_lim_high = np.array([1000, 1000, 1000, 100, 100, 100, 100, 100, 100, 10*2*np.pi, 10*2*np.pi, 10*2*np.pi])
 
+        self.initial_state = np.zeros(self.dim_state)
+
     def reset(self):
         """
         to be done
         """
+        self.state = self.initial_state
 
 
     def df(self,state,u):
