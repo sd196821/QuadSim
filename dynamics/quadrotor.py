@@ -2,11 +2,10 @@ import numpy as np
 from scipy.integrate import RK45
 
 
-class Drone(object):
+class Drone():
     """Quadrotor class"""
 
     def __init__(self):
-
         self.dt = 0.02
         self.t0 = 0
         self.t = self.t0
@@ -29,8 +28,10 @@ class Drone(object):
 
         self.u = np.zeros(shape=self.dim_u)
 
-        self.state_lim_low = np.array([-1000, -1000, 0, -100, -100, -100, -100, -100, -100, -10*2*np.pi, -10*2*np.pi, -10*2*np.pi])
-        self.state_lim_high = np.array([1000, 1000, 1000, 100, 100, 100, 100, 100, 100, 10*2*np.pi, 10*2*np.pi, 10*2*np.pi])
+        self.state_lim_low = np.array(
+            [-1000, -1000, 0, -100, -100, -100, -100, -100, -100, -10 * 2 * np.pi, -10 * 2 * np.pi, -10 * 2 * np.pi])
+        self.state_lim_high = np.array(
+            [1000, 1000, 1000, 100, 100, 100, 100, 100, 100, 10 * 2 * np.pi, 10 * 2 * np.pi, 10 * 2 * np.pi])
 
     def reset(self):
         """
@@ -42,7 +43,6 @@ class Drone(object):
         # return self.state
 
     def df(self, state, u):
-
         #  F, M1, M2, M3 = u
         F = u[0]
         M = u[1:3]
@@ -56,18 +56,18 @@ class Drone(object):
         R_b2w = R_w2b.transpose()
 
         F_b = np.array([0, 0, F])
-        acc = 1.0 / self.mass * ( np.dot(R_b2w, F_b) - np.array([0, 0, self.mass*self.gravity]))
+        acc = 1.0 / self.mass * (np.dot(R_b2w, F_b) - np.array([0, 0, self.mass * self.gravity]))
 
         K_quat = 2.0
-        e_quat = 1.0 - np.sum(att_q**2)
+        e_quat = 1.0 - np.sum(att_q ** 2)
         q_sk = np.array([[0, -att_rate[0], -att_rate[1], -att_rate[2]],
-                                    [att_rate[0], 0, -att_rate[1], att_rate[2]],
-                                    [att_rate[1], att_rate[2], 0, -att_rate[0]],
-                                    [att_rate[2], -att_rate[1], att_rate[0], 0]])
+                         [att_rate[0], 0, -att_rate[1], att_rate[2]],
+                         [att_rate[1], att_rate[2], 0, -att_rate[0]],
+                         [att_rate[2], -att_rate[1], att_rate[0], 0]])
 
         q_dot = -0.5 * q_sk * att_q + K_quat * e_quat * att_q
 
-        att_acc = np.linalg.inv(self.Inertia) @ (M - np.outer(att_rate, self.Inertia@att_rate))
+        att_acc = np.linalg.inv(self.Inertia) @ (M - np.outer(att_rate, self.Inertia @ att_rate))
 
         dstate = np.zeros(self.dim_state)
         dstate[0:2] = vel
@@ -87,7 +87,7 @@ class Drone(object):
             self.integrator.step()
         self.state = self.integrator.y
         self.u = u
-        self.integrator = RK45(self.f, self.integrator.t, self.state, self.integrator.t+self.tf)
+        self.integrator = RK45(self.f, self.integrator.t, self.state, self.integrator.t + self.tf)
 
         return self.state
 
@@ -110,6 +110,6 @@ class Drone(object):
         qa_hat[2, 0] = -quat_n[2]
         qa_hat[2, 1] = quat_n[1]
 
-        R = np.eye(3) + 2 * qa_hat * qa_hat + 2*quat[0]*qa_hat
+        R = np.eye(3) + 2 * qa_hat * qa_hat + 2 * quat[0] * qa_hat
 
         return R
