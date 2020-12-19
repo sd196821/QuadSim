@@ -34,7 +34,7 @@ class Drone():
 
         self.integrator = None  # RK45(self.f, self.t0, self.state, self.tf)
 
-    def reset(self):
+    def reset(self, reset_state=None):
         """
         Reset state, control and integrator
         """
@@ -79,35 +79,55 @@ class Drone():
         return dstate
 
     def f(self, t, df):
+        """
+        Repack df to match requirements of SciPy integrator
+        :param t: Current Time
+        :param df: Equation of Motion
+        :return: Equation of Motion
+        """
         t = self.t
         df = self.df(self.state, self.u)
         return df
 
     def step(self, u):
+        """
+        RK45 integrator for one step/dt
+        :param u:Control Command--[F,Mx,My,Mz]
+        :return: System State
+        """
         while not (self.integrator.status == 'finished'):
             self.integrator.step()
         self.state = self.integrator.y
         self.u = u
+        self.t = self.integrator.t
         self.integrator = RK45(self.f, self.integrator.t, self.state, self.integrator.t + self.dt)
 
         return self.state
 
     def get_state(self):
+        """
+        Get system state
+        :return: State of System
+        """
         return self.state
+
+    def get_time(self):
+        """
+        Get current time
+        :return:Time
+        """
+        return self.t
 
     @staticmethod
     def quat2rot(quat):
         """
         Quaternion 2 Rotation Matrix
-        :param quat:attitude quaternion
+        :param quat:Attitude Quaternion
         :return: Rotation Matrix
         """
-        quat_n = np.zeros(4)
         R = np.zeros((3, 3))
-
         quat_n = quat / np.linalg.norm(quat)
         qa_hat = np.zeros((3, 3))
-        # print(quat_n)
         qa_hat[0, 1] = -quat_n[3]
         qa_hat[0, 2] = quat_n[2]
         qa_hat[1, 2] = -quat_n[1]
