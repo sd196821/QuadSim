@@ -18,7 +18,7 @@ class Drone():
                                  [0, 0, 0.0003738]])
         self.arm_length = 0.086
 
-        self.F_max = 4 * self.mass * self.gravity
+        self.F_max = 2 * self.mass * self.gravity
         self.F_min = 0
 
         self.dim_state = 13  # x,y,z,vx,vy,vz,q1,q2,q3,q4,w1,w2,w3
@@ -61,7 +61,7 @@ class Drone():
     def df(self, state, u):
         #  F, M1, M2, M3 = u
         F = u[0]
-        M = u[1:]
+        M = self.Inertia @ u[1:]
 
         pos = state[0:3]
         vel = state[3:6]
@@ -161,7 +161,7 @@ class Drone():
     @staticmethod
     def quat2rot(quat):
         """
-        Quaternion 2 Rotation Matrix
+        Quaternion 2 Rotation Matrix Z-X-Y
         :param quat:Attitude Quaternion
         :return: Rotation Matrix
         """

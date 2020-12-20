@@ -1,12 +1,19 @@
 from dynamics.quadrotor import Drone
 from controller.PIDController import controller
-from utils.transform import quat2euler, rad2deg, deg2rad
+from utils.transform import quat2rot, rot2euler, euler2rot, rot2quat, rad2deg, deg2rad
 import numpy as np
 import matplotlib.pyplot as plt
 
-ini_state = np.array([0, 0, 0, 0, 0, 0, 1, 0, 0, 0, deg2rad(5), 0, 0])
+# print(rot2quat(euler2rot(np.array([0, 0, 0]))))
+ini_att = rot2quat(euler2rot(np.array([deg2rad(0), deg2rad(0), 0])))
+ini_angular_rate = np.array([0, deg2rad(0), 0])
+ini_state = np.zeros(13)
+ini_state[6:10] = ini_att
+ini_state[10:] = ini_angular_rate
 
-state_des = np.array([0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0.0, 0.0, 0])
+att_des = rot2quat(euler2rot(np.array([deg2rad(0), deg2rad(5), deg2rad(0)])))
+state_des = np.zeros(13)
+state_des[6:10] = att_des
 
 # Initial a drone and set its initial state
 quad1 = Drone()
@@ -32,25 +39,30 @@ for t in range(total_step):
     u[1:] = att_control.attitude_controller(state_des, state_now)
     u_all[t, 1:] = u[1:]
     state[t, :] = state_now
-    rpy[t, :] = quat2euler(state_now[6:10])
+    rpy[t, :] = rot2euler(quat2rot(state_now[6:10]))
     time[t] = quad1.get_time()
-    print("time : ", time[t])
+    # print("time : ", time[t])
     quad1.step(u)
-
 
 plt.figure()
 plt.plot(time, rad2deg(rpy))
 plt.legend(['roll', 'pitch', 'yaw'])
+plt.xlabel("Time/s")
+plt.ylabel("Angle/deg")
 plt.title("Attitude")
 
 plt.figure()
 plt.plot(time, rad2deg(state[:, 10:]))
 plt.legend(['p', 'q', 'r'])
+plt.xlabel("Time/s")
+plt.ylabel("Angular rate/deg*s^-1")
 plt.title("Angular Rates")
 
 plt.figure()
 plt.plot(time, u_all[:, 1:])
 plt.legend(['Mx', 'My', 'Mz'])
+plt.xlabel("Time/s")
+plt.ylabel("Moment/Nm")
 plt.title("Control Moment")
 
 plt.show()

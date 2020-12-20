@@ -7,12 +7,12 @@ class controller():
     """Controller Class"""
 
     def __init__(self, L):
-        self.kp_roll = 10
-        self.kp_pitch = 0
+        self.kp_roll = 60 #60
+        self.kp_pitch = 1
         self.kp_yaw = 0
 
-        self.kd_roll = 20
-        self.kd_pitch = 0
+        self.kd_roll = 50
+        self.kd_pitch = 1 #50
         self.kd_yaw = 0
 
         self.Kf = 0.8
@@ -31,8 +31,8 @@ class controller():
         :param state_now: Current State[13]
         :return: M: output moment[3]
         """
-        attitude_des = self.quat2euler(state_des[6:10])
-        attitude_now = self.quat2euler(state_now[6:10])
+        attitude_des = self.rot2euler(self.quat2rot(state_des[6:10]))
+        attitude_now = self.rot2euler(self.quat2rot(state_now[6:10]))
         att_rate_des = state_des[10:]
         att_rate_now = state_now[10:]
 
@@ -62,16 +62,30 @@ class controller():
         rotor_omega = self.allocation_matrix @ u
         return rotor_omega
 
+    @staticmethod
+    def quat2rot(quat):
+        """
+        Quaternion 2 Rotation Matrix Z-X-Y
+        :param quat:Attitude Quaternion
+        :return: Rotation Matrix
+        """
+        R = np.zeros((3, 3))
+        quat_n = quat / np.linalg.norm(quat)
+        qa_hat = np.zeros((3, 3))
+        qa_hat[0, 1] = -quat_n[3]
+        qa_hat[0, 2] = quat_n[2]
+        qa_hat[1, 2] = -quat_n[1]
+        qa_hat[1, 0] = quat_n[3]
+        qa_hat[2, 0] = -quat_n[2]
+        qa_hat[2, 1] = quat_n[1]
+
+        R = np.eye(3) + 2 * qa_hat * qa_hat + 2 * quat[0] * qa_hat
+
+        return R
 
     @staticmethod
-    def quat2euler(quat):
-        """
-        Quaternion to Euler Angle
-        :param quat:
-        :return:
-        """
-        quat_w, quat_x, quat_y, quat_z = quat[0], quat[1], quat[2], quat[3]
-        euler_x = np.arctan2(2*quat_w*quat_x + 2*quat_y*quat_z, quat_w*quat_w - quat_x*quat_x - quat_y*quat_y + quat_z*quat_z)
-        euler_y = -np.arcsin(2*quat_x*quat_z - 2*quat_w*quat_y)
-        euler_z = np.arctan2(2*quat_w*quat_z+2*quat_x*quat_y, quat_w*quat_w + quat_x*quat_x - quat_y*quat_y - quat_z*quat_z)
-        return np.array([euler_x, euler_y, euler_z])
+    def rot2euler(R):
+        phi = np.arcsin(R[1, 2])
+        psi = np.arctan2(-R[1, 0] / np.cos(phi), R[1, 1] / np.cos(phi))
+        theta = np.arctan2(-R[0, 2] / np.cos(phi), R[2, 2] / np.cos(phi))
+        return np.array([phi, theta, psi])
