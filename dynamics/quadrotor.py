@@ -12,11 +12,14 @@ class Drone():
         # self.tf = 0.1
 
         self.gravity = 9.8
-        self.mass = 2.0
-        self.Inertia = np.array([[0.1, 0, 0],
-                                 [0, 0.1, 0],
-                                 [0, 0, 0.01]])
-        self.arm_length = 0.5
+        self.mass = 0.18
+        self.Inertia = np.array([[0.00025, 0, 0],
+                                 [0, 0.000232, 0],
+                                 [0, 0, 0.0003738]])
+        self.arm_length = 0.086
+
+        self.F_max = 4 * self.mass * self.gravity
+        self.F_min = 0
 
         self.dim_state = 13  # x,y,z,vx,vy,vz,q1,q2,q3,q4,w1,w2,w3
         self.dim_u = 4
@@ -34,6 +37,15 @@ class Drone():
             [1000, 1000, 1000, 100, 100, 100, 100, 100, 100, 10 * 2 * np.pi, 10 * 2 * np.pi, 10 * 2 * np.pi])
 
         self.integrator = None  # RK45(self.f, self.t0, self.state, self.tf)
+
+        self.A = np.array([[0.25, 0, -0.5/self.arm_length],
+                           [0.25, 0.5/self.arm_length, 0],
+                           [0.25, 0, 0.5/self.arm_length],
+                           [0.25, -0.5/self.arm_length, 0]])
+
+        self.B = np.array([[1, 1, 1, 1],
+                           [0, self.arm_length, 0, -self.arm_length],
+                           [-self.arm_length, 0, self.arm_length, 0]])
 
     def reset(self, reset_state=None):
         """
@@ -101,11 +113,29 @@ class Drone():
         while not (self.integrator.status == 'finished'):
             self.integrator.step()
         self.state = self.integrator.y
-        self.u = u
+        self.u = self.u_limit(u)
         self.t = self.integrator.t
         self.integrator = RK45(self.f, self.integrator.t, self.state, self.integrator.t + self.dt)
 
         return self.state
+
+    def u_limit(self, u):
+        """
+        Limit Force and Moment
+        :param u:control
+        :return: u_limited[F;M]
+        """
+        prop_thrust = self.A @ u[0:3]
+        # prop_thrust_clamped = np.max(np.min(prop_thrust, (self.F_max / 4)), self.F_min)
+        prop_thrust[prop_thrust > (self.F_max / 4)] = self.F_max / 4
+        prop_thrust[prop_thrust < self.F_min] = self.F_min
+
+        F = self.B[0, :] @ prop_thrust
+        output = np.zeros(4)
+        output[0] = F
+        output[1:3] = self.B[1:, :] @ prop_thrust
+        output[2] = u[3]
+        return output
 
     def get_state(self):
         """
