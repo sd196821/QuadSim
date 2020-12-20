@@ -22,8 +22,9 @@ class Drone():
         self.dim_u = 4
 
         self.state = np.zeros(shape=self.dim_state)
-        self.initial_state = np.zeros(self.dim_state)
-        self.initial_state[6] = 1.0
+        # self.initial_state = np.zeros(self.dim_state)
+        # self.initial_state[6] = 1.0
+        self.initial_state = np.array([0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0])
 
         self.u = np.zeros(shape=self.dim_u)
 
@@ -38,6 +39,8 @@ class Drone():
         """
         Reset state, control and integrator
         """
+        if reset_state is not None:
+            self.initial_state = reset_state
         self.state = self.initial_state
         self.u = np.zeros(self.dim_u)
         self.integrator = RK45(self.f, self.t0, self.state, self.dt)
@@ -117,6 +120,13 @@ class Drone():
         :return:Time
         """
         return self.t
+
+    def get_arm_length(self):
+        """
+        Get arm length
+        :return: Arm length
+        """
+        return self.arm_length
 
     @staticmethod
     def quat2rot(quat):
