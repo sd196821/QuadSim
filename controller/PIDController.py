@@ -8,12 +8,13 @@ class controller():
 
     def __init__(self, L):
         self.kp_roll = 60 #60
-        self.kp_pitch = 1
-        self.kp_yaw = 0
+        self.kp_pitch = 60
+        self.kp_yaw = 70
 
         self.kd_roll = 50
-        self.kd_pitch = 1 #50
-        self.kd_yaw = 0
+        self.kd_pitch = 50 #50
+        self.kd_yaw = 13
+        self.ff_yaw = 0
 
         self.Kf = 0.8
         self.Km = 0.1
@@ -49,8 +50,8 @@ class controller():
         # print(e)
         # print(k, e)
         M = np.array([(self.kp_roll * e_angle[0] + self.kd_roll * e_angular_rate[0]),
-                      (self.kp_pitch * e_angle[1] + self.kp_pitch * e_angular_rate[1]),
-                      (self.kp_yaw * e_angle[2] + self.kp_yaw * e_angular_rate[2])])
+                      (self.kp_pitch * e_angle[1] + self.kd_pitch * e_angular_rate[1]),
+                      (self.ff_yaw + self.kp_yaw * e_angle[2] + self.kd_yaw * e_angular_rate[2])])
         # M = k @ e[:, 0] + k @ e[:, 1] + k @ e[:, 2]
         # print(M)
         return M

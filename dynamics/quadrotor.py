@@ -128,13 +128,13 @@ class Drone():
         prop_thrust = self.A @ u[0:3]
         # prop_thrust_clamped = np.max(np.min(prop_thrust, (self.F_max / 4)), self.F_min)
         prop_thrust[prop_thrust > (self.F_max / 4)] = self.F_max / 4
-        prop_thrust[prop_thrust < self.F_min] = self.F_min
+        prop_thrust[prop_thrust < (self.F_min / 4)] = self.F_min / 4
 
         F = self.B[0, :] @ prop_thrust
         output = np.zeros(4)
         output[0] = F
         output[1:3] = self.B[1:, :] @ prop_thrust
-        output[2] = u[3]
+        output[3] = u[3]
         return output
 
     def get_state(self):

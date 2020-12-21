@@ -11,7 +11,7 @@ ini_state = np.zeros(13)
 ini_state[6:10] = ini_att
 ini_state[10:] = ini_angular_rate
 
-att_des = rot2quat(euler2rot(np.array([deg2rad(0), deg2rad(5), deg2rad(0)])))
+att_des = rot2quat(euler2rot(np.array([deg2rad(0), deg2rad(0), deg2rad(10)])))
 state_des = np.zeros(13)
 state_des[6:10] = att_des
 
