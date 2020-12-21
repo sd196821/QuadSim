@@ -7,7 +7,7 @@ def quat2rot(quat):
     :param quat:Attitude Quaternion
     :return: Rotation Matrix
     """
-    R = np.zeros((3, 3))
+    R = np.zeros((3, 3), dtype=np.float32)
     quat_n = quat / np.linalg.norm(quat)
     qa_hat = np.zeros((3, 3))
     qa_hat[0, 1] = -quat_n[3]
@@ -24,7 +24,7 @@ def rot2euler(R):
     phi = np.arcsin(R[1, 2])
     psi = np.arctan2(-R[1, 0] / np.cos(phi), R[1, 1] / np.cos(phi))
     theta = np.arctan2(-R[0, 2] / np.cos(phi), R[2, 2] / np.cos(phi))
-    return np.array([phi, theta, psi])
+    return np.array([phi, theta, psi], dtype=np.float32)
 
 
 def euler2rot(angle):
@@ -35,7 +35,7 @@ def euler2rot(angle):
                   [-np.cos(phi) * np.sin(psi), np.cos(phi) * np.cos(psi), np.sin(phi)],
                   [np.cos(psi) * np.sin(theta) + np.cos(theta) * np.sin(phi) * np.sin(psi),
                    np.sin(psi) * np.sin(theta) - np.cos(psi) * np.cos(theta) * np.sin(phi),
-                   np.cos(phi) * np.cos(theta)]])
+                   np.cos(phi) * np.cos(theta)]], dtype=np.float32)
     return R
 
 
@@ -66,7 +66,7 @@ def rot2quat(R):
         qx = (R[0, 2] + R[2, 0]) / S
         qy = (R[1, 2] + R[2, 1]) / S
         qz = 0.25 * S
-    q = np.array([qw, qx, qy, qz])
+    q = np.array([qw, qx, qy, qz], dtype=np.float32)
     q = q * np.sign(qw)
     return q
 
