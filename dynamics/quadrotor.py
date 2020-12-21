@@ -11,14 +11,14 @@ class Drone():
         self.t = self.t0
         # self.tf = 0.1
 
-        self.gravity = 9.8
+        self.gravity = 9.81
         self.mass = 0.18
         self.Inertia = np.array([[0.00025, 0, 0],
                                  [0, 0.000232, 0],
                                  [0, 0, 0.0003738]])
         self.arm_length = 0.086
 
-        self.F_max = 2 * self.mass * self.gravity
+        self.F_max = 4 * self.mass * self.gravity
         self.F_min = 0
 
         self.dim_state = 13  # x,y,z,vx,vy,vz,q1,q2,q3,q4,w1,w2,w3

@@ -7,27 +7,27 @@ class controller():
     """Controller Class"""
 
     def __init__(self, L, mass):
-        self.kp_roll = 40 # 60; 10 ;15
-        self.kp_pitch = 10
+        self.kp_roll = 100 # 60; 10 ;15
+        self.kp_pitch = 100
         self.kp_yaw = 70
 
-        self.kd_roll = 30 # 50; 14.3; 21(5s)
-        self.kd_pitch = 14.3 # 50
+        self.kd_roll = 60 # 50; 14.3; 21(5s)
+        self.kd_pitch = 60 # 50
         self.kd_yaw = 13
         self.ff_yaw = 0
 
-        self.kp_x = 0
-        self.kp_y = 0
+        self.kp_x = 0.3 # 0.1;0.2;0.3
+        self.kp_y = 0.3
         self.kp_z = 20  # 10;
 
-        self.kd_x = 0
-        self.kd_y = 0
+        self.kd_x = 0.9 # 0.4;0.6(12.5s) 0.7();0.9(10)
+        self.kd_y = 0.9
         self.kd_z = 10.9  # 6;
 
         self.Kf = 0.8
         self.Km = 0.1
 
-        self.g = 9.8
+        self.g = 9.81
         self.mass = mass
 
         # Control allocation matrix:
