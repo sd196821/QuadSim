@@ -158,6 +158,9 @@ class Drone():
         """
         return self.arm_length
 
+    def get_mass(self):
+        return self.mass
+
     @staticmethod
     def quat2rot(quat):
         """
