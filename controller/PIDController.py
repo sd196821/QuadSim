@@ -7,12 +7,12 @@ class controller():
     """Controller Class"""
 
     def __init__(self, L):
-        self.kp_roll = 60 #60
-        self.kp_pitch = 60
+        self.kp_roll = 10 # 60; 10 ;15
+        self.kp_pitch = 10
         self.kp_yaw = 70
 
-        self.kd_roll = 50
-        self.kd_pitch = 50 #50
+        self.kd_roll = 14.3 # 50; 14.5; 21(5s)
+        self.kd_pitch = 14.3 #50
         self.kd_yaw = 13
         self.ff_yaw = 0
 
