@@ -3,11 +3,14 @@ from controller.PIDController import controller
 from utils.transform import quat2rot, rot2euler, euler2rot, rot2quat, rad2deg, deg2rad
 import numpy as np
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 # print(rot2quat(euler2rot(np.array([0, 0, 0]))))
+ini_pos = np.array([0, 0, 5])
 ini_att = rot2quat(euler2rot(np.array([deg2rad(0), deg2rad(0), 0])))
 ini_angular_rate = np.array([0, deg2rad(0), 0])
 ini_state = np.zeros(13)
+ini_state[0:3] = ini_pos
 ini_state[6:10] = ini_att
 ini_state[10:] = ini_angular_rate
 
@@ -93,6 +96,13 @@ plt.plot(time, u_all[:, 0])
 plt.xlabel("Time/s")
 plt.ylabel("Force/N")
 plt.title("Total Thrust")
+
+trajectory_fig = plt.figure()
+ax = Axes3D(trajectory_fig)
+ax.plot3D(state[:, 0], state[:, 1], state[:, 2])
+ax.set_xlabel("x")
+ax.set_ylabel("y")
+ax.set_zlabel("z")
 
 plt.show()
 

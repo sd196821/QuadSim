@@ -22,7 +22,7 @@ class controller():
 
         self.kd_x = 0.9 # 0.4;0.6(12.5s) 0.7();0.9(10)
         self.kd_y = 0.9
-        self.kd_z = 10.9  # 6;
+        self.kd_z = 18  # 6;
 
         self.Kf = 0.8
         self.Km = 0.1
