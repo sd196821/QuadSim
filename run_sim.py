@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 # print(rot2quat(euler2rot(np.array([0, 0, 0]))))
-ini_pos = np.array([0, 0, 5])
+ini_pos = np.array([0, 0, 8])
 ini_att = rot2quat(euler2rot(np.array([deg2rad(0), deg2rad(0), 0])))
 ini_angular_rate = np.array([0, deg2rad(0), 0])
 ini_state = np.zeros(13)
@@ -15,7 +15,7 @@ ini_state[6:10] = ini_att
 ini_state[10:] = ini_angular_rate
 
 att_des = rot2quat(euler2rot(np.array([deg2rad(0), deg2rad(0), deg2rad(0)])))
-pos_des = np.array([-2, 2, 5])  # [x, y, z]
+pos_des = np.array([0.1, 0, 8.2])  # [x, y, z]
 state_des = np.zeros(13)
 state_des[0:3] = pos_des
 state_des[6:10] = att_des
