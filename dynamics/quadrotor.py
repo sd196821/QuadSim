@@ -47,6 +47,9 @@ class Drone():
                            [0, self.arm_length, 0, -self.arm_length],
                            [-self.arm_length, 0, self.arm_length, 0]])
 
+        self.pos_docking_port_in_Body = np.array([0.05, 0, 0])
+        self.quat_docking_port_in_Body = self.rot2quat(self.euler2rot(np.array([0, 0, 0])))
+
     def reset(self, reset_state=None):
         """
         Reset state, control and integrator
@@ -181,3 +184,47 @@ class Drone():
         R = np.eye(3) + 2 * qa_hat * qa_hat + 2 * quat[0] * qa_hat
 
         return R
+
+    @staticmethod
+    def euler2rot(angle):
+        phi, theta, psi = angle
+        R = np.array([[np.cos(psi) * np.cos(theta) - np.sin(phi) * np.sin(psi) * np.sin(theta),
+                       np.cos(theta) * np.sin(psi) + np.cos(psi) * np.sin(phi) * np.sin(theta),
+                       -np.cos(phi) * np.sin(theta)],
+                      [-np.cos(phi) * np.sin(psi), np.cos(phi) * np.cos(psi), np.sin(phi)],
+                      [np.cos(psi) * np.sin(theta) + np.cos(theta) * np.sin(phi) * np.sin(psi),
+                       np.sin(psi) * np.sin(theta) - np.cos(psi) * np.cos(theta) * np.sin(phi),
+                       np.cos(phi) * np.cos(theta)]], dtype=np.float32)
+        return R
+
+    @staticmethod
+    def rot2quat(R):
+        tr = R[0, 0] + R[1, 1] + R[2, 2]
+
+        if tr > 0:
+            S = np.sqrt(tr + 1.0) * 2  # S = 4 * qw
+            qw = 0.25 * S
+            qx = (R[2, 1] - R[1, 2]) / S
+            qy = (R[0, 2] - R[2, 0]) / S
+            qz = (R[1, 0] - R[0, 1]) / S
+        elif (R[0, 0] > R[1, 1]) & (R[0, 0] > R[2, 2]):
+            S = np.sqrt(1.0 + R[0, 0] - R[1, 1] - R[2, 2]) * 2  # S = 4 * qx
+            qw = (R[2, 1] - R[1, 2]) / S
+            qx = 0.25 * S
+            qy = (R[0, 1] + R[1, 0]) / S
+            qz = (R[0, 2] + R[2, 0]) / S
+        elif R[1, 1] > R[2, 2]:
+            S = np.sqrt(1.0 + R[1, 1] - R[0, 0] - R[2, 2]) * 2  # S = 4 * qy
+            qw = (R[0, 2] - R[2, 0]) / S
+            qx = (R[0, 1] + R[1, 0]) / S
+            qy = 0.25 * S
+            qz = (R[1, 2] + R[2, 1]) / S
+        else:
+            S = np.sqrt(1.0 + R[2, 2] - R[0, 0] - R[1, 1]) * 2  # S = 4 * qz
+            qw = (R[1, 0] - R[0, 1]) / S
+            qx = (R[0, 2] + R[2, 0]) / S
+            qy = (R[1, 2] + R[2, 1]) / S
+            qz = 0.25 * S
+        q = np.array([qw, qx, qy, qz], dtype=np.float32)
+        q = q * np.sign(qw)
+        return q
