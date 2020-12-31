@@ -172,10 +172,12 @@ class Drone():
         R_b2w = R_w2b.transpose()
         dock_port.pos = self.state[0:3] + R_b2w @ self.dock_port_inB.pos
         dock_port.quat = self.rot2quat(self.dock_port_inB.att @ R_w2b)
-        dock_port.vel =
-        dock_port.angular_rate
-
-
+        w_sk = np.array([[0, -self.state[12], self.state[11]],
+                         [self.state[12], 0, -self.state[10]],
+                         [-self.state[11], self.state[10], 0]])
+        dock_port.vel = self.state[3:6] + w_sk @ (R_b2w @ self.dock_port_inB.pos)
+        dock_port.angular_rate = self.state[10:]
+        return dock_port
 
     @staticmethod
     def quat2rot(quat):
