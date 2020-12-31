@@ -6,6 +6,7 @@ class Drone():
     """Quadrotor class"""
 
     def __init__(self):
+
         self.dt = 0.01
         self.t0 = 0
         self.t = self.t0
@@ -47,8 +48,9 @@ class Drone():
                            [0, self.arm_length, 0, -self.arm_length],
                            [-self.arm_length, 0, self.arm_length, 0]])
 
-        self.pos_docking_port_in_Body = np.array([0.05, 0, 0])
-        self.quat_docking_port_in_Body = self.rot2quat(self.euler2rot(np.array([0, 0, 0])))
+        self.dock_port_inB = None
+        self.dock_port_inB.pos = np.array([0.05, 0, 0])
+        self.dock_port_inB.att = self.euler2rot(np.array([0, 0, 0]))
 
     def reset(self, reset_state=None):
         """
@@ -164,7 +166,16 @@ class Drone():
     def get_mass(self):
         return self.mass
 
-    def get_dock_pose
+    def get_dock_port_state(self):
+        dock_port = None
+        R_w2b = self.quat2rot(self.state[6:10])
+        R_b2w = R_w2b.transpose()
+        dock_port.pos = self.state[0:3] + R_b2w @ self.dock_port_inB.pos
+        dock_port.quat = self.rot2quat(self.dock_port_inB.att @ R_w2b)
+        dock_port.vel =
+        dock_port.angular_rate
+
+
 
     @staticmethod
     def quat2rot(quat):
