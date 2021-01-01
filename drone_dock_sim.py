@@ -29,10 +29,10 @@ state_des[6:10] = att_des
 
 # Initial a drone and set its initial state
 quad1 = Drone()
-quad1.reset(ini_state)
+quad1.reset(ini_state_qd1)
 
 quad2 = Drone()
-quad2.reset(ini_state)
+quad2.reset(ini_state_qd2)
 
 control = controller(quad1.get_arm_length(), quad1.get_mass())
 
