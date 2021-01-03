@@ -12,12 +12,12 @@ class HoveringEnv(gym.Env):
     def __init__(self):
         self.drone = Drone()
 
-        self.state = None
+        self.state = np.zeros(13)
 
         self.steps_beyond_done = None
 
         self.pos_threshold = 10
-        self.vel_threshold = 10
+        self.vel_threshold = 1
 
         ini_pos = np.array([0, 0, 0])
         ini_att = rot2quat(euler2rot(np.array([deg2rad(0), deg2rad(0), 0])))
@@ -27,23 +27,24 @@ class HoveringEnv(gym.Env):
         self.ini_state[6:10] = ini_att
         self.ini_state[10:] = ini_angular_rate
 
-        low = self.drone.state_lim_low
-        high = self.drone.state_lim_high
+        low = self.drone.state_lim_low.flatten()
+        high = self.drone.state_lim_high.flatten()
 
-        self.act_space = spaces.Box(low=np.array([-20, -10, -10, -10]), high=np.array([20, 10, 10, 10]), shape=(4,))
-        self.obs_space = space.Box(low=low, high=high, shape=(12,))
+        self.act_space = spaces.Box(low=np.array([0, -10, -10, -10]), high=np.array([20, 10, 10, 10]), shape=(4,))
+        self.obs_space = spaces.Box(low=low, high=high, shape=(12,))
 
         self.seed()
-        self.reset()
+        # self.reset()
 
     def step(self, action):
+        reward = 0.0
         self.state = self.drone.step(action)
-        done = bool(np.linalg.norm(self.state[0:3],2) < -self.pos_threshold
-                    or np.linalg.norm(self.state[0:3],2) > self.pos_threshold
+        done = bool(np.linalg.norm(self.state[0:3], 2) < -self.pos_threshold
+                    or np.linalg.norm(self.state[0:3], 2) > self.pos_threshold
                     or np.linalg.norm(self.state[3:6], 2) < -self.vel_threshold
                     or np.linalg.norm(self.state[3:6], 2) > self.vel_threshold)
         if not done:
-            reward = np.linalg.norm(self.state[0:3],2)
+            reward = np.linalg.norm(self.state[0:3], 2)
         elif self.steps_beyond_done is None:
             self.steps_beyond_done = 0
             reward = 1.0
@@ -55,22 +56,20 @@ class HoveringEnv(gym.Env):
 
         return self.state, reward, done, {}
 
-
-
     def reset(self):
         out = self.drone.reset(self.ini_state)
         self.steps_beyond_done = None
         return out
 
-    def render(self):
+    def render(self, mode='human'):
         return None
-
 
     def close(self):
         return None
 
     def seed(self, seed=None):
-
+        self.np_random, seed = seeding.np_random(seed)
+        return [seed]
 
 
 

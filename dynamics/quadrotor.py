@@ -48,9 +48,9 @@ class Drone():
                            [0, self.arm_length, 0, -self.arm_length],
                            [-self.arm_length, 0, self.arm_length, 0]])
 
-        self.dock_port_inB = None
-        self.dock_port_inB.pos = np.array([0.05, 0, 0])
-        self.dock_port_inB.att = self.euler2rot(np.array([0, 0, 0]))
+        # self.dock_port_inB = None
+        self.dock_port_inB_pos = np.array([0.05, 0, 0])
+        self.dock_port_inB_att = self.euler2rot(np.array([0, 0, 0]))
 
     def reset(self, reset_state=None):
         """
@@ -170,12 +170,12 @@ class Drone():
         dock_port = None
         R_w2b = self.quat2rot(self.state[6:10])
         R_b2w = R_w2b.transpose()
-        dock_port.pos = self.state[0:3] + R_b2w @ self.dock_port_inB.pos
-        dock_port.quat = self.rot2quat(self.dock_port_inB.att @ R_w2b)
+        dock_port.pos = self.state[0:3] + R_b2w @ self.dock_port_inB_pos
+        dock_port.quat = self.rot2quat(self.dock_port_inB_att @ R_w2b)
         w_sk = np.array([[0, -self.state[12], self.state[11]],
                          [self.state[12], 0, -self.state[10]],
                          [-self.state[11], self.state[10], 0]])
-        dock_port.vel = self.state[3:6] + w_sk @ (R_b2w @ self.dock_port_inB.pos)
+        dock_port.vel = self.state[3:6] + w_sk @ (R_b2w @ self.dock_port_inB_pos)
         dock_port.angular_rate = self.state[10:]
         return dock_port
 
