@@ -27,11 +27,11 @@ class HoveringEnv(gym.Env):
         self.ini_state[6:10] = ini_att
         self.ini_state[10:] = ini_angular_rate
 
-        low = self.drone.state_lim_low.flatten()
-        high = self.drone.state_lim_high.flatten()
+        low = self.drone.state_lim_low
+        high = self.drone.state_lim_high
 
-        self.act_space = spaces.Box(low=np.array([0, -10, -10, -10]), high=np.array([20, 10, 10, 10]), shape=(4,))
-        self.obs_space = spaces.Box(low=low, high=high, shape=(12,))
+        self.action_space = spaces.Box(low=np.array([0, -10, -10, -10]), high=np.array([20, 10, 10, 10]))
+        self.observation_space = spaces.Box(low=low, high=high)
 
         self.seed()
         # self.reset()
@@ -53,7 +53,7 @@ class HoveringEnv(gym.Env):
                 logger.warn("Calling step though done!")
                 self.steps_beyond_done += 1
                 reward = 0.0
-
+        # time = self.drone.get_time()
         return self.state, reward, done, {}
 
     def reset(self):
@@ -71,6 +71,8 @@ class HoveringEnv(gym.Env):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
+#    def get_time(self):
+#        return self.drone.get_time()
 
 
 

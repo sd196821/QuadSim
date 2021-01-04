@@ -33,9 +33,9 @@ class Drone():
         self.u = np.zeros(shape=self.dim_u)
 
         self.state_lim_low = np.array(
-            [-100, -100, 0, -100, -100, -100, -100, -100, -100, -10 * 2 * np.pi, -10 * 2 * np.pi, -10 * 2 * np.pi])
+            [-100, -100, 0, -100, -100, -100, -100, -100, -100, -100, -10 * 2 * np.pi, -10 * 2 * np.pi, -10 * 2 * np.pi])
         self.state_lim_high = np.array(
-            [100, 100, 100, 100, 100, 100, 100, 100, 100, 10 * 2 * np.pi, 10 * 2 * np.pi, 10 * 2 * np.pi])
+            [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 10 * 2 * np.pi, 10 * 2 * np.pi, 10 * 2 * np.pi])
 
         self.integrator = None  # RK45(self.f, self.t0, self.state, self.tf)
 
