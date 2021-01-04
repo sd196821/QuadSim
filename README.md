@@ -22,7 +22,7 @@ Tensorflow==1.15
 ### PID Controller
 PID control: $`python run_sim_PID.py`
 ### Neural Hover Controller
-1. PPO2 controller training: $`python train_drl_hover_ppo2.py`
+1. Training PPO2 controller: $`python train_drl_hover_ppo2.py`
 2. Run trained controller: $`python run_trained_drl_hover_ppo2.py`
 
 
