@@ -7,8 +7,7 @@ from stable_baselines.common.vec_env import DummyVecEnv, VecNormalize
 env = DummyVecEnv([lambda: gym.make("gym_docking:hovering-v0")])
 # gym.make('gym_docking:hovering-v0')
 
-print()
-
-model = PPO2('MlpPolicy', env, verbose=1)
-model.learn(10000)
+model = PPO2('MlpPolicy', env, verbose=1, tensorboard_log="./ppo2_hovering_tensorboard/",
+             learning_rate=2.5e-2)
+model.learn(total_timesteps=100000)
 model.save("ppo2_hover")

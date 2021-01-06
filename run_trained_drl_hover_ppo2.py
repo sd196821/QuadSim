@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from utils.transform import quat2rot, rot2euler, euler2rot, rot2quat, rad2deg, deg2rad
 
-
 env = DummyVecEnv([lambda: gym.make("gym_docking:hovering-v0")])
 # gym.make('gym_docking:hovering-v0')
 model = PPO2.load('ppo2_hover')
@@ -18,23 +17,27 @@ state = np.zeros((total_step, 13))
 rpy = np.zeros((total_step, 3))
 time = np.zeros(total_step)
 u_all = np.zeros((total_step, 4))
-
+done = False
 
 obs = env.reset()
 for t in range(total_step):
     action, states = model.predict(obs)
-    obs, reward, dones, info = env.step(action)
+    obs, reward, done, info = env.step(action)
+
     state_now = obs.flatten()
     # print('u: ', action)
     # print('s: ', obs.flatten())
     u_all[t, :] = action.flatten()
     state[t, :] = state_now
     rpy[t, :] = rot2euler(quat2rot(state_now[6:10]))
-#    time[t] = info
+    # if done:
+    #     break
+    #    obs = env.reset()
+    # time[t] = info
     # print('pos:', obs[0, 0:3])
     # print('vel:', obs[3:6])
     # print(state_now)
-# print(state)
+    # print(state)
 
 time = np.linspace(0, total_step, total_step)
 # Plot Results
