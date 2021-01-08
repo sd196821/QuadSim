@@ -20,7 +20,7 @@ class HoveringEnv(gym.Env):
         self.pos_threshold = 1
         self.vel_threshold = 0.1
 
-        ini_pos = np.array([0, 0, 0])
+        ini_pos = np.array([0.0, 0.0, 0.0])
         ini_att = rot2quat(euler2rot(np.array([deg2rad(0), deg2rad(0), 0])))
         ini_angular_rate = np.array([0, deg2rad(0), 0])
         self.ini_state = np.zeros(13)
@@ -28,7 +28,7 @@ class HoveringEnv(gym.Env):
         self.ini_state[6:10] = ini_att
         self.ini_state[10:] = ini_angular_rate
 
-        pos_des = np.array([0, 0, 1])  # [x, y, z]
+        pos_des = np.array([0.0, 0.0, 1.0])  # [x, y, z]
         att_des = rot2quat(euler2rot(np.array([deg2rad(0), deg2rad(0), deg2rad(0)])))
         self.state_des = np.zeros(13)
         self.state_des[0:3] = pos_des
@@ -50,16 +50,27 @@ class HoveringEnv(gym.Env):
         # 2) < self.pos_threshold and -self.vel_threshold < np.linalg.norm(self.state[3:6] - self.state_des[3:6],
         # 2) < self.vel_threshold)\ or
 
-        rpy = rot2euler(quat2rot(self.state_des[6:10]))
+        rpy = rot2euler(quat2rot(self.state[6:10]))
+        pos_error = self.state_des[0:3] - self.state[0:3]
+        vel_error = self.state_des[3:6] - self.state[3:6]
+        att_error = rot2euler(quat2rot(self.state_des[6:10])) - rpy
+        att_vel_error = self.state_des[10:] - self.state[10:]
+
+        r_thre = 0.0
+        if np.linalg.norm(pos_error, 2) < 0.1 and np.linalg.norm(vel_error, 2) < 0.1:
+            r_thre = 100
+
         done = bool((np.linalg.norm(self.state[0:3], 2) < -10) or (np.linalg.norm(self.state[0:3], 2) > 10)
-                    or (np.linalg.norm(self.state[3:6], 2) < -5) or (np.linalg.norm(self.state[3:6], 2) > 5)
-                    or (np.abs(rpy[0]) > (deg2rad(89))) or (np.abs(rpy[1]) > (deg2rad(89))) or (np.abs(rpy[2]) > (deg2rad(179))))
+                    or (np.linalg.norm(self.state[3:6], 2) < -10) or (np.linalg.norm(self.state[3:6], 2) > 10)
+                    or (np.abs(rpy[0]) > (deg2rad(89.0))) or (np.abs(rpy[1]) > (deg2rad(89.0))) or (np.abs(rpy[2]) > (deg2rad(179.0))))
         if not done:
-            reward = - (np.linalg.norm(self.state_des[0:3] - self.state[0:3], 2)) + np.linalg.norm(
-                rot2euler(quat2rot(self.state_des[6:10])) - rot2euler(quat2rot(self.state[6:10])), 2)
+            reward = r_thre + 10.0 - 10 * (np.linalg.norm(pos_error, 2)) \
+                     - np.linalg.norm(vel_error, 2) \
+                     - np.linalg.norm(att_error, 2) \
+                     - np.linalg.norm(att_vel_error, 2)
         elif self.steps_beyond_done is None:
             self.steps_beyond_done = 0
-            reward = 10.0
+            reward = 0.0
         else:
             if self.steps_beyond_done == 0:
                 logger.warn("Calling step though done!")
