@@ -3,6 +3,7 @@ import copy
 from QuadSim.dynamics.quadrotor import Drone
 from QuadSim.guided_policy_search.utils.data_logger import DataLogger
 import policy as plc
+import sample as smp
 import numpy as np
 
 class GPS():
@@ -12,6 +13,7 @@ class GPS():
         self.T = 1000
         self.dX = 13
         self.dU = 4
+        self.dM = 0 # ref: mjc_reacher_images
         self.iter = 5  # outer loop total iteration
         self.condition = 1
         self.num_samples = 5  # number of samples per iter
@@ -75,7 +77,7 @@ class GPS():
             pol = self.traj_distr_lqg[cond]
 
         self.Drone.reset()
-        new_sample =
+        new_sample = smp(self.T, self.dX, self.dU, dM=self.dM)
         for t in range(self.T):
 
 

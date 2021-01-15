@@ -196,9 +196,6 @@ def init_lqr(INIT_LQG):
     x0, dX, dU = config['x0'], config['dX'], config['dU']
     dt, T = config['dt'], config['T']
 
-    #TODO: Use packing instead of assuming which indices are the joint
-    #      angles.
-
     # Notation notes:
     # L = loss, Q = q-function (dX+dU dimensional),
     # V = value function (dX dimensional), F = dynamics
@@ -242,8 +239,6 @@ def init_lqr(INIT_LQG):
     vx_t = np.zeros(dX)  # Vx = dV/dX. Derivative of value function.
     Vxx_t = np.zeros((dX, dX))  # Vxx = ddV/dXdX.
 
-    #TODO: A lot of this code is repeated with traj_opt_lqr_python.py
-    #      backward pass.
     for t in range(T - 1, -1, -1):
         # Compute Q function at this step.
         if t == (T - 1):
@@ -314,5 +309,35 @@ def init_pd(INIT_PD):
     invPSig = (1.0 / config['init_var']) * np.tile(np.eye(dU), [T, 1, 1])
 
     return policy_LQG(K, k, PSig, cholPSig, invPSig)
+
+
+def guess_dynamics(gains, acc, dX, dU, dt):
+    """
+    Initial guess at the model using position-velocity assumption.
+    Note: This code assumes joint positions occupy the first dU state
+          indices and joint velocities occupy the next dU.
+    Args:
+        gains: dU dimensional joint gains.
+        acc: dU dimensional joint acceleration.
+        dX: Dimensionality of the state.
+        dU: Dimensionality of the action.
+        dt: Length of a time step.
+    Returns:
+        Fd: A dX by dX+dU transition matrix.
+        fc: A dX bias vector.
+    """
+    Fd = np.vstack([
+        np.hstack([
+            np.eye(dU), dt * np.eye(dU), np.zeros((dU, dX - dU*2)),
+            dt ** 2 * np.diag(gains)
+        ]),
+        np.hstack([
+            np.zeros((dU, dU)), np.eye(dU), np.zeros((dU, dX - dU*2)),
+            dt * np.diag(gains)
+        ]),
+        np.zeros((dX - dU*2, dX+dU))
+    ])
+    fc = np.hstack([acc * dt ** 2, acc * dt, np.zeros((dX - dU*2))])
+    return Fd, fc
 
 
