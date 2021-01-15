@@ -1,14 +1,14 @@
 import numpy as np
 
 class sample():
-    def __init__(self, T, dX, dU, dO=None, dM):
-        self.T =  T
+    def __init__(self, T, dX, dU, dO=None, dM=None):
+        self.T = T
         self.dX = dX
         self.dU = dU
         self.dO = dO
         self.dM = dM
 
-        self.data= []
+        self.data = []
         self.X = np.empty((self.T, self.dX))
         self.X.fill(np.nan)
         self.obs = np.empty((self.T, self.dO))
