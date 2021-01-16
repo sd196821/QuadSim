@@ -76,10 +76,13 @@ class GPS():
         else:
             pol = self.traj_distr_lqg[cond]
 
-        x = self.Drone.reset()
+        X = self.Drone.reset()
+        O = X
         new_sample = smp(self.T, self.dX, self.dU)
-        new_sample.set()
+        new_sample.set(X)
         for t in range(self.T):
+            X_t = new_sample.get_X(t=t)
+
 
 
 
