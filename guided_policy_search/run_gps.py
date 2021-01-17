@@ -82,11 +82,6 @@ class GPS():
             'update_in_bwd_pass': True,  # Whether or not to update the TVLG controller during the bwd pass.
         }
 
-        self.cost = {
-            'type': CostSum,
-            'costs': [action_cost, state_cost],
-            'weights': [1e-5, 1.0],
-        }
 
         action_cost = {
             'type': CostAction,
@@ -102,6 +97,13 @@ class GPS():
                 },
             },
         }
+
+        self.cost = {
+            'type': CostSum,
+            'costs': [action_cost, state_cost],
+            'weights': [1e-5, 1.0],
+        }
+
         # self.distr =
 
     def run(self):
