@@ -2,6 +2,7 @@ import copy
 
 from QuadSim.dynamics.quadrotor import Drone
 from QuadSim.guided_policy_search.utils.data_logger import DataLogger
+from QuadSim.guided_policy_search.sample import sample
 import policy as plc
 import sample as smp
 import numpy as np
@@ -11,6 +12,7 @@ class GPS():
         self.Drone = Drone()
         self.dt = self.Drone.dt
         self.T = 1000
+        self.substeps = 0
         self.dX = 13
         self.dU = 4
         self.dM = 0 # ref: mjc_reacher_images
@@ -19,10 +21,14 @@ class GPS():
         self.num_samples = 5  # number of samples per iter
         self.data_logger = DataLogger()
         self.data_dir = "./data"
-        self.sample_dicts = {'traj'}
+
+        self.samples = [[] for _ in range(self.num_samples)]
+
+        self.sample_dicts = {_:self.samples for _ in range(self.condition)}
 
         self.sample_on_policy = True
         self.policy = plc.policy_NN()
+        self.noisy = True
 
         self.traj_distr_lqg = [{
             'x0': np.zeros(self.dX),
@@ -55,38 +61,49 @@ class GPS():
         # self.distr =
 
     def run(self):
-        for itr in range(0, self.iter):
+        for itr in range(self.iter):
             for cond in range(self.condition):
                 for i in range(self.num_samples):
-                    self.take_traj_sample(itr, cond, i)
+                    self.take_traj_sample(cond, i)
+                self.sample_dicts[cond] = self.samples
 
-            # traj_sample_lists = [
-            #     self.agent. get_samples(cond, -self._hyperparams['num_samples'])
-            #     for cond in self._train_idx
-            # ]
-            #
-            # self.take_iteration(itr, traj_sample_lists)
+            self.take_iteration(itr)
             #
             # self.take_policy_sample()
 
 
-    def take_traj_sample(self, itr, cond, i):
+    def take_traj_sample(self, cond, i_sample):
         if self.sample_on_policy is True:
             pol = self.policy
         else:
             pol = self.traj_distr_lqg[cond]
 
+        if self.noisy:
+            noise = sample.generate_noise(smooth=True, var=0.1, renorm=True)
+        else:
+            noise = np.zeros((self.T, self.dU))
+
         X = self.Drone.reset()
         O = X
         new_sample = smp(self.T, self.dX, self.dU)
-        new_sample.set(X)
+        U = np.zeros([self.T, self.dU])
+        new_sample.set(X=X, U=U)
         for t in range(self.T):
             X_t = new_sample.get_X(t=t)
+            obs_t = new_sample.get_obs(t=t)
+            U[t, :] = pol.act(X_t, obs_t, t, noise[t, :])
+            if (t + 1) < self.T:
+                for _ in range(self.substeps):
+                    self.Drone.step(U[t, :])
+                own_X = self.Drone.get_state()
+                new_sample.set(own_X, U[t, :], t)
+
+        self.samples[i_sample].append(new_sample)
 
 
-
-
-    def take_iteration(self):
+    def take_iteration(self, itr):
+        traj_sample = self.sample_dicts
+        self.algotirhm.iteration(traj_sample)
 
 
     def take_policy_sample(self):
