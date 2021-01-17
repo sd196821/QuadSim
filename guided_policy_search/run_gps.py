@@ -30,6 +30,19 @@ class GPS():
         self.policy = plc.policy_NN()
         self.noisy = True
 
+        self.init_pol_wt = 0.1
+        self.fit_dynamics = True
+        self.dynamics = {'type': DynamicsLRPrior,
+                        'regularization': 1e-6,
+                        'prior':{
+                            'type': DynamicsPriorGMM,
+                            'max_clusters': 20,
+                            'min_samples_per_cluster': 40,
+                            'max_samples': 20
+                            'strength': 1.0,
+                             }
+                         }
+
         self.traj_distr_lqg = [{
             'x0': np.zeros(self.dX),
             'dX': self.dX,
@@ -58,6 +71,37 @@ class GPS():
 
         }]
 
+        self.traj_opt = {
+            # Dual variable updates for non-PD Q-function.
+            'del0': 1e-4,
+            'eta_error_threshold': 1e16,
+            'min_eta': 1e-8,
+            'max_eta': 1e16,
+            'cons_per_step': False,  # Whether or not to enforce separate KL constraints at each time step.
+            'use_prev_distr': False,  # Whether or not to measure expected KL under the previous traj distr.
+            'update_in_bwd_pass': True,  # Whether or not to update the TVLG controller during the bwd pass.
+        }
+
+        self.cost = {
+            'type': CostSum,
+            'costs': [action_cost, state_cost],
+            'weights': [1e-5, 1.0],
+        }
+
+        action_cost = {
+            'type': CostAction,
+            'wu': np.array([1, 1])
+        }
+
+        state_cost = {
+            'type': CostState,
+            'data_types': {
+                JOINT_ANGLES: {
+                    'wp': np.array([1, 1]),
+                    'target_state': agent["target_state"],
+                },
+            },
+        }
         # self.distr =
 
     def run(self):
