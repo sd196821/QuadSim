@@ -3,6 +3,7 @@ import copy
 from QuadSim.dynamics.quadrotor import Drone
 from QuadSim.guided_policy_search.utils.data_logger import DataLogger
 from QuadSim.guided_policy_search.sample import sample
+from QuadSim.guided_policy_search.cost import RAMP_CONSTANT,evallogl2term
 import policy as plc
 import sample as smp
 import numpy as np
@@ -83,19 +84,19 @@ class GPS():
         }
 
 
-        action_cost = {
-            'type': CostAction,
+        self.action_cost = {
             'wu': np.array([1, 1])
         }
 
-        state_cost = {
-            'type': CostState,
-            'data_types': {
-                JOINT_ANGLES: {
-                    'wp': np.array([1, 1]),
-                    'target_state': agent["target_state"],
-                },
-            },
+        self.state_cost = {
+            'wp': np.array([1, 1]), # State weights - must be set.
+            'ramp_option': RAMP_CONSTANT,  # How target cost ramps over time.
+            'l1': 0.0,
+            'l2': 1.0,
+            'alpha': 1e-2,
+            'wp_final_multiplier': 1.0,  # Weight multiplier on final time step.
+            'target_state': None,  # Target state - must be set.
+            # 'wp': None,
         }
 
         self.cost = {

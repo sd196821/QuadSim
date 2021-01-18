@@ -48,36 +48,94 @@ class CostState():
         final_lxx = np.zeros((T, Dx, Dx))
         final_lux = np.zeros((T, Du, Dx))
 
-        for data_type in self.config['data_types']:
-            config = self.config['data_types'][data_type]
-            wp = config['wp']
-            tgt = config['target_state']
-            x = sample.get(data_type)
-            _, dim_sensor = x.shape
+        wp = self.config['wp']
+        tgt = self.config['target_state']
+        x = sample.get_X()
+        _, dim_sensor = x.shape
 
-            wpm = get_ramp_multiplier(
-                self.config['ramp_option'], T,
-                wp_final_multiplier=self.config['wp_final_multiplier']
-            )
-            wp *= np.expand_dims(wpm, axis=-1)
-            # Compute state penalty.
-            dist = x - tgt
+        wpm = get_ramp_multiplier(
+            self.config['ramp_option'], T,
+            wp_final_multiplier=self.config['wp_final_multiplier']
+        )
+        wp *= np.expand_dims(wpm, axis=-1)
+        # Compute state penalty.
+        dist = x - tgt
 
-            # Evaluate penalty term.
-            l, ls, lss = evall1l2term(
-                wp, dist, np.tile(np.eye(dim_sensor), [T, 1, 1]),
-                np.zeros((T, dim_sensor, dim_sensor, dim_sensor)),
-                self.config['l1'], self.config['l2'],
-                self.config['alpha']
-            )
+        # Evaluate penalty term.
+        l, ls, lss = evall1l2term(
+            wp, dist, np.tile(np.eye(dim_sensor), [T, 1, 1]),
+            np.zeros((T, dim_sensor, dim_sensor, dim_sensor)),
+            self.config['l1'], self.config['l2'],
+            self.config['alpha']
+        )
 
-            final_l += l
+        final_l += l
 
-            # TODO: change pack_data_x
-            sample.agent.pack_data_x(final_lx, ls, data_types=[data_type])
-            sample.agent.pack_data_x(final_lxx, lss,
-                                     data_types=[data_type, data_type])
+        # sample.agent.pack_data_x(final_lx, ls, data_types=[data_type])
+        # sample.agent.pack_data_x(final_lxx, lss,
+        #                              data_types=[data_type, data_type])
+        final_lx = ls
+        final_lxx = lss
         return final_l, final_lx, final_lu, final_lxx, final_luu, final_lux
+
+
+# class CostFK():
+#     """
+#     Forward kinematics cost function. Used for costs involving the end
+#     effector position.
+#     """
+#     def __init__(self, agent):
+#         self.config = agent.Cost_FK
+#
+#     def eval(self, sample):
+#         """
+#         Evaluate forward kinematics (end-effector penalties) cost.
+#         Temporary note: This implements the 'joint' penalty type from
+#             the matlab code, with the velocity/velocity diff/etc.
+#             penalties removed. (use CostState instead)
+#         Args:
+#             sample: A single sample.
+#         """
+#         T = sample.T
+#         dX = sample.dX
+#         dU = sample.dU
+#
+#         wpm = get_ramp_multiplier(
+#             self.config['ramp_option'], T,
+#             wp_final_multiplier=self.config['wp_final_multiplier']
+#         )
+#         wp = self.config['wp'] * np.expand_dims(wpm, axis=-1)
+#
+#         # Initialize terms.
+#         l = np.zeros(T)
+#         lu = np.zeros((T, dU))
+#         lx = np.zeros((T, dX))
+#         luu = np.zeros((T, dU, dU))
+#         lxx = np.zeros((T, dX, dX))
+#         lux = np.zeros((T, dU, dX))
+#
+#         # Choose target.
+#         tgt = self.config['target_end_effector']
+#         pt = sample.get_X()
+#         dist = pt - tgt
+#         # TODO - These should be partially zeros so we're not double
+#         #        counting.
+#         #        (see pts_jacobian_only in matlab costinfos code)
+#         jx = sample.get(END_EFFECTOR_POINT_JACOBIANS)
+#
+#         # Evaluate penalty term. Use estimated Jacobians and no higher
+#         # order terms.
+#         jxx_zeros = np.zeros((T, dist.shape[1], jx.shape[2], jx.shape[2]))
+#         l, ls, lss = self._hyperparams['evalnorm'](
+#             wp, dist, jx, jxx_zeros, self._hyperparams['l1'],
+#             self._hyperparams['l2'], self._hyperparams['alpha']
+#         )
+#         # Add to current terms.
+#         sample.agent.pack_data_x(lx, ls, data_types=[JOINT_ANGLES])
+#         sample.agent.pack_data_x(lxx, lss,
+#                                  data_types=[JOINT_ANGLES, JOINT_ANGLES])
+#
+#         return l, lx, lu, lxx, luu, lux
 
 
 
