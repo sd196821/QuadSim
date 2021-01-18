@@ -78,6 +78,42 @@ class CostState():
         final_lxx = lss
         return final_l, final_lx, final_lu, final_lxx, final_luu, final_lux
 
+class CostSum():
+    def __init__(self, agent):
+        self.config = agent.cost
+
+        self._costs = []
+        self._weights = self.config['weights']
+
+    def eval(self, sample):
+        """
+        Evaluate cost function and derivatives.
+        Args:
+            sample:  A single sample
+        """
+        l, lx, lu, lxx, luu, lux = self._costs[0].eval(sample)
+
+        # Compute weighted sum of each cost value and derivatives.
+        weight = self._weights[0]
+        l = l * weight
+        lx = lx * weight
+        lu = lu * weight
+        lxx = lxx * weight
+        luu = luu * weight
+        lux = lux * weight
+        for i in range(1, len(self._costs)):
+            pl, plx, plu, plxx, pluu, plux = self._costs[i].eval(sample)
+            weight = self._weights[i]
+            l = l + pl * weight
+            lx = lx + plx * weight
+            lu = lu + plu * weight
+            lxx = lxx + plxx * weight
+            luu = luu + pluu * weight
+            lux = lux + plux * weight
+        return l, lx, lu, lxx, luu, lux
+
+
+
 
 # class CostFK():
 #     """

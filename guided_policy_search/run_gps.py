@@ -100,7 +100,6 @@ class GPS():
         }
 
         self.cost = {
-            'type': CostSum,
             'costs': [action_cost, state_cost],
             'weights': [1e-5, 1.0],
         }
