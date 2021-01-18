@@ -11,6 +11,7 @@ class Algorithm():
         self.M = agent.condition
         self._cond_idx = range(self.M)
         self.iteration_count = 0
+        self.config = agent.alg
 
         # Grab a few values from the agent.
         self.T = agent.T
@@ -44,17 +45,11 @@ class Algorithm():
         self.traj_opt = TrajOptLQR(agent)
 
         # TODO: After not done.
-        if type(agent['cost']) == list:
-            self.cost = [
-                hyperparams['cost'][i]['type'](hyperparams['cost'][i])
-                for i in range(self.M)
-            ]
-        else:
-            self.cost = [
-                hyperparams['cost']['type'](hyperparams['cost'])
-                for _ in range(self.M)
-            ]
-        self.base_kl_step = self._hyperparams['kl_step']
+        self.cost = [
+            hyperparams['cost']['type'](hyperparams['cost'])
+            for _ in range(self.M)
+        ]
+        self.base_kl_step = self.config['kl_step']
 
     # Update dynamics model using all samples.
     def update_dynamics(self):
