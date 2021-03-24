@@ -5,7 +5,7 @@ import google.protobuf.text_format
 import DroneMsg_pb2 as msg
 context = zmq.Context()
 socket = context.socket(zmq.PUB)
-socket.bind("tcp://*:12345")
+socket.bind("tcp://*:12345") # Target=12346;Chaser=12345
 
 message = msg.MsgDrone()
 message.id = 1
