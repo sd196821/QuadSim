@@ -26,8 +26,8 @@ class pub_server():
         self.message.id = self.id
         self.message.sim_step = sim_step
         state = state_now.tolist()
-        print(state_now)
-        print(state[0:3])
+        #print(state_now)
+        #print(state[0:3])
         self.message.pos[:] = state[0:3]
         self.message.vel[:] = state[3:6]
         self.message.att_quat[:] = state[6:10]
