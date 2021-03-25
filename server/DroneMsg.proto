@@ -3,21 +3,11 @@ message MsgDrone {
 	int32 id = 1;
 	int32 sim_step = 2;
 
-	enum State{
-		POS = 0;
-		VEL = 1;
-		ATT_QUAT = 2;
-		ATT_RATE = 3;
-	}
+	repeated double pos = 3;
+	repeated double vel = 4;
+	repeated double att_quat = 5;
+	repeated double att_rate = 6;
 
-	State state = 3;
-
-	enum Video{
-		FPV = 0;
-		TPV = 1;
-		TARGET_FPV = 2;
-		TARGET_TPV = 3;
-	}
-
-	Video video = 4;
+	//video = 4;
 }
+

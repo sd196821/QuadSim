@@ -19,80 +19,10 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x0e\x44roneMsg.proto\"\xda\x01\n\x08MsgDrone\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x10\n\x08sim_step\x18\x02 \x01(\x05\x12\x1e\n\x05state\x18\x03 \x01(\x0e\x32\x0f.MsgDrone.State\x12\x1e\n\x05video\x18\x04 \x01(\x0e\x32\x0f.MsgDrone.Video\"5\n\x05State\x12\x07\n\x03POS\x10\x00\x12\x07\n\x03VEL\x10\x01\x12\x0c\n\x08\x41TT_QUAT\x10\x02\x12\x0c\n\x08\x41TT_RATE\x10\x03\"9\n\x05Video\x12\x07\n\x03\x46PV\x10\x00\x12\x07\n\x03TPV\x10\x01\x12\x0e\n\nTARGET_FPV\x10\x02\x12\x0e\n\nTARGET_TPV\x10\x03\x62\x06proto3'
+  serialized_pb=b'\n\x0e\x44roneMsg.proto\"f\n\x08MsgDrone\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x10\n\x08sim_step\x18\x02 \x01(\x05\x12\x0b\n\x03pos\x18\x03 \x03(\x01\x12\x0b\n\x03vel\x18\x04 \x03(\x01\x12\x10\n\x08\x61tt_quat\x18\x05 \x03(\x01\x12\x10\n\x08\x61tt_rate\x18\x06 \x03(\x01\x62\x06proto3'
 )
 
 
-
-_MSGDRONE_STATE = _descriptor.EnumDescriptor(
-  name='State',
-  full_name='MsgDrone.State',
-  filename=None,
-  file=DESCRIPTOR,
-  create_key=_descriptor._internal_create_key,
-  values=[
-    _descriptor.EnumValueDescriptor(
-      name='POS', index=0, number=0,
-      serialized_options=None,
-      type=None,
-      create_key=_descriptor._internal_create_key),
-    _descriptor.EnumValueDescriptor(
-      name='VEL', index=1, number=1,
-      serialized_options=None,
-      type=None,
-      create_key=_descriptor._internal_create_key),
-    _descriptor.EnumValueDescriptor(
-      name='ATT_QUAT', index=2, number=2,
-      serialized_options=None,
-      type=None,
-      create_key=_descriptor._internal_create_key),
-    _descriptor.EnumValueDescriptor(
-      name='ATT_RATE', index=3, number=3,
-      serialized_options=None,
-      type=None,
-      create_key=_descriptor._internal_create_key),
-  ],
-  containing_type=None,
-  serialized_options=None,
-  serialized_start=125,
-  serialized_end=178,
-)
-_sym_db.RegisterEnumDescriptor(_MSGDRONE_STATE)
-
-_MSGDRONE_VIDEO = _descriptor.EnumDescriptor(
-  name='Video',
-  full_name='MsgDrone.Video',
-  filename=None,
-  file=DESCRIPTOR,
-  create_key=_descriptor._internal_create_key,
-  values=[
-    _descriptor.EnumValueDescriptor(
-      name='FPV', index=0, number=0,
-      serialized_options=None,
-      type=None,
-      create_key=_descriptor._internal_create_key),
-    _descriptor.EnumValueDescriptor(
-      name='TPV', index=1, number=1,
-      serialized_options=None,
-      type=None,
-      create_key=_descriptor._internal_create_key),
-    _descriptor.EnumValueDescriptor(
-      name='TARGET_FPV', index=2, number=2,
-      serialized_options=None,
-      type=None,
-      create_key=_descriptor._internal_create_key),
-    _descriptor.EnumValueDescriptor(
-      name='TARGET_TPV', index=3, number=3,
-      serialized_options=None,
-      type=None,
-      create_key=_descriptor._internal_create_key),
-  ],
-  containing_type=None,
-  serialized_options=None,
-  serialized_start=180,
-  serialized_end=237,
-)
-_sym_db.RegisterEnumDescriptor(_MSGDRONE_VIDEO)
 
 
 _MSGDRONE = _descriptor.Descriptor(
@@ -118,16 +48,30 @@ _MSGDRONE = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='state', full_name='MsgDrone.state', index=2,
-      number=3, type=14, cpp_type=8, label=1,
-      has_default_value=False, default_value=0,
+      name='pos', full_name='MsgDrone.pos', index=2,
+      number=3, type=1, cpp_type=5, label=3,
+      has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='video', full_name='MsgDrone.video', index=3,
-      number=4, type=14, cpp_type=8, label=1,
-      has_default_value=False, default_value=0,
+      name='vel', full_name='MsgDrone.vel', index=3,
+      number=4, type=1, cpp_type=5, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='att_quat', full_name='MsgDrone.att_quat', index=4,
+      number=5, type=1, cpp_type=5, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='att_rate', full_name='MsgDrone.att_rate', index=5,
+      number=6, type=1, cpp_type=5, label=3,
+      has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
@@ -136,8 +80,6 @@ _MSGDRONE = _descriptor.Descriptor(
   ],
   nested_types=[],
   enum_types=[
-    _MSGDRONE_STATE,
-    _MSGDRONE_VIDEO,
   ],
   serialized_options=None,
   is_extendable=False,
@@ -145,14 +87,10 @@ _MSGDRONE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=19,
-  serialized_end=237,
+  serialized_start=18,
+  serialized_end=120,
 )
 
-_MSGDRONE.fields_by_name['state'].enum_type = _MSGDRONE_STATE
-_MSGDRONE.fields_by_name['video'].enum_type = _MSGDRONE_VIDEO
-_MSGDRONE_STATE.containing_type = _MSGDRONE
-_MSGDRONE_VIDEO.containing_type = _MSGDRONE
 DESCRIPTOR.message_types_by_name['MsgDrone'] = _MSGDRONE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
