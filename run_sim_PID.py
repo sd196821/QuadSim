@@ -1,21 +1,21 @@
 from dynamics.quadrotor import Drone
 from controller.PIDController import controller
-from utils.transform import quat2rot, rot2euler, euler2rot, rot2quat, rad2deg, deg2rad
+from utils.transform import quat2rot, rot2euler, euler2rot, rot2quat, rad2deg, deg2rad, quat2euler, euler2quat
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 # print(rot2quat(euler2rot(np.array([0, 0, 0]))))
-ini_pos = np.array([0, 0, 8])
-ini_att = rot2quat(euler2rot(np.array([deg2rad(0), deg2rad(0), 0])))
+ini_pos = np.array([0, 0, 0])
+ini_att = euler2quat(np.array([deg2rad(0.0), deg2rad(0.0), deg2rad(0.0)]))
 ini_angular_rate = np.array([0, deg2rad(0), 0])
 ini_state = np.zeros(13)
 ini_state[0:3] = ini_pos
 ini_state[6:10] = ini_att
 ini_state[10:] = ini_angular_rate
 
-att_des = rot2quat(euler2rot(np.array([deg2rad(0), deg2rad(0), deg2rad(0)])))
-pos_des = np.array([0.1, 0, 8.2])  # [x, y, z]
+pos_des = np.array([0.2, 0, 0.1])  # [x, y, z]
+att_des = euler2quat(np.array([deg2rad(0.0), deg2rad(0.0), deg2rad(0.0)]))
 state_des = np.zeros(13)
 state_des[0:3] = pos_des
 state_des[6:10] = att_des
@@ -31,11 +31,13 @@ u = np.zeros(quad1.dim_u)
 # u[0] = quad1.get_mass() * 9.81
 # u[3] = 0.2
 
-total_step = 3000
+total_step = 5000
 state = np.zeros((total_step, 13))
+state_des_all = np.zeros((total_step, 13))
 rpy = np.zeros((total_step, 3))
 time = np.zeros(total_step)
 u_all = np.zeros((total_step, 4))
+
 
 # Run simulation
 for t in range(total_step):
@@ -44,7 +46,8 @@ for t in range(total_step):
     # u[1:] = control.attitude_controller(state_des, state_now)
     u_all[t, :] = u
     state[t, :] = state_now
-    rpy[t, :] = rot2euler(quat2rot(state_now[6:10]))
+    # rpy[t, :] = rot2euler(quat2rot(state_now[6:10]))
+    rpy[t, :] = quat2euler(state_now[6:10])
     time[t] = quad1.get_time()
     # print("time : ", time[t])
     quad1.step(u)
