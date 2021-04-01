@@ -8,12 +8,12 @@ class controller():
     """Controller Class"""
 
     def __init__(self, L, mass):
-        self.kp_roll = 1.5 # 60; 10 ;15
-        self.kp_pitch = 1.5
+        self.kp_roll = -50  # 60; 10 ;15
+        self.kp_pitch = -50
         self.kp_yaw = 5  # 70
 
-        self.kd_roll = 50  # 50; 14.3; 21(5s)
-        self.kd_pitch = 50  # 50
+        self.kd_roll = 28 # 50; 14.3; 21(5s)
+        self.kd_pitch = 28 # 50
         self.kd_yaw = 70  # 13
         self.ff_yaw = 0.0
 
@@ -24,6 +24,12 @@ class controller():
         self.kd_x = 1.9  # 1.87 # 0.9 # 0.4;0.6(12.5s) 0.7();0.9(10)
         self.kd_y = 1.9  # 1.87 0.9
         self.kd_z = 20  # 18  # 6;
+
+        self.kp_vz = 1
+        self.kd_vz = 0.1
+
+        self.kp_yaw_rate = 45
+        self.kd_yaw_rate = 0.1
 
         self.Kf = 0.8
         self.Km = 0.1
@@ -51,18 +57,9 @@ class controller():
         att_rate_des = state_des[10:]
         att_rate_now = state_now[10:]
 
-        # kp = np.array([self.kp_roll, self.kp_pitch, self.kp_yaw])
-        # kd = np.array([self.kd_roll, self.kd_pitch, self.kd_yaw])
-        # k = np.column_stack((kp, kd))
-        # print(k)
-
         e_angle = attitude_des - attitude_now
         e_angular_rate = att_rate_des - att_rate_now
-        # print(e_angle, e_angular_rate)
-        # print(e_angle.shape, e_angular_rate.shape)
-        # e = np.vstack((e_angle, e_angular_rate))
-        # print(e)
-        # print(k, e)
+
         M = np.array([(self.kp_roll * e_angle[0] + self.kd_roll * e_angular_rate[0]),
                       (self.kp_pitch * e_angle[1] + self.kd_pitch * e_angular_rate[1]),
                       (self.ff_yaw + self.kp_yaw * e_angle[2] + self.kd_yaw * e_angular_rate[2])])
@@ -70,7 +67,7 @@ class controller():
         # print(M)
         return M
 
-    def hover_controller(self, state_des, state_now):
+    def pos_controller(self, state_des, state_now):
         acc_des = np.zeros(3)
         e_pos = state_des[0:3] - state_now[0:3]
         e_vel = state_des[3:6] - state_now[3:6]
@@ -101,8 +98,37 @@ class controller():
         return F, state_des
 
     def PID(self, state_des, state_now):
-        F, state_des_c = self.hover_controller(state_des, state_now)
+        F, state_des_c = self.pos_controller(state_des, state_now)
         M = self.attitude_controller(state_des_c, state_now)
+        output = np.zeros(4)
+        output[0] = F
+        output[1:] = M
+        return output
+
+    def rc_controller(self, state_des, state_now, state_last):
+        # acc_des = np.zeros(3)
+        # e_z = state_des[2] - state_now[2]
+        # altitude velocity  controller
+        e_vz = state_des[5] - state_now[5]
+        e_dvz = state_now[5] - state_last[5]
+        acc_z_des = self.kp_vz * e_vz + self.kd_vz * e_dvz # self.kp_z * e_z + self.kd_z * e_vz
+        F = self.mass * self.g + self.mass * acc_z_des
+        # M = self.attitude_controller(state_des, state_now)
+        # roll & pitch controller
+        attitude_des = quat2euler(state_des[6:10])
+        attitude_now = quat2euler(state_now[6:10])
+        att_rate_des = state_des[10:]
+        att_rate_now = state_now[10:]
+
+        e_angle = attitude_des - attitude_now
+        e_angular_rate = att_rate_des - att_rate_now
+        e_dangular_rate = state_now[10:12] - state_last[10:12]
+        e_dyaw_rate = state_now[12] - state_last[12]
+
+        M = np.array([(self.kp_roll * e_angle[0] + self.kd_roll * e_angular_rate[0]),
+                      (self.kp_pitch * e_angle[1] + self.kd_pitch * e_angular_rate[1]),
+                      (self.kp_yaw_rate * e_angular_rate[2] + self.kd_yaw_rate * e_dyaw_rate)])
+
         output = np.zeros(4)
         output[0] = F
         output[1:] = M
