@@ -104,13 +104,14 @@ def quat2euler(quat):
     r22 = quat_w * quat_w - quat_x * quat_x - quat_y * quat_y + quat_z * quat_z
 
     if r12 < +1.0:
-        phi = np.arcsin(r12)
-        psi = np.arctan2(-r10, r11)
-        theta = np.arctan2(-r02, r22)
         if r12 < -1.0:
             phi = -np.pi / 2.0
             psi = np.arctan2(-r10, r11)
             theta = 0
+        else:
+            phi = np.arcsin(r12)
+            psi = np.arctan2(-r10, r11)
+            theta = np.arctan2(-r02, r22)
     else:
         phi = np.pi / 2.0
         psi = np.arctan2(-r10, r11)

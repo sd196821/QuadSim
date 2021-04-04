@@ -14,7 +14,7 @@ ini_state[0:3] = ini_pos
 ini_state[6:10] = ini_att
 ini_state[10:] = ini_angular_rate
 
-pos_des = np.array([0.0, 0, 0.2])  # [x, y, z]
+pos_des = np.array([-0.2, 0.2, 0.2])  # [x, y, z]
 att_des = euler2quat(np.array([deg2rad(0.0), deg2rad(0.0), deg2rad(0.0)]))
 state_des = np.zeros(13)
 state_des[0:3] = pos_des
@@ -31,7 +31,7 @@ u = np.zeros(quad1.dim_u)
 # u[0] = quad1.get_mass() * 9.81
 # u[3] = 0.2
 
-total_step = 500
+total_step = 2000
 state = np.zeros((total_step, 13))
 state_des_all = np.zeros((total_step, 13))
 rpy = np.zeros((total_step, 3))
@@ -42,6 +42,7 @@ u_all = np.zeros((total_step, 4))
 # Run simulation
 for t in range(total_step):
     state_now = quad1.get_state()
+    # u = control.att_alt_controller(state_des, state_now)
     u = control.PID(state_des, state_now)
     # u[1:] = control.attitude_controller(state_des, state_now)
     u_all[t, :] = u

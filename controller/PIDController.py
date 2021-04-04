@@ -8,22 +8,22 @@ class controller():
     """Controller Class"""
 
     def __init__(self, L, mass):
-        self.kp_roll = 0  # 60; 10 ;15
-        self.kp_pitch = 0
-        self.kp_yaw = 5  # 70
+        self.kp_roll = -10  # 60; 10 ;15
+        self.kp_pitch = -10
+        self.kp_yaw = -9.5  # 70
 
-        self.kd_roll = 0 # 50; 14.3; 21(5s)
-        self.kd_pitch = 0 # 50
-        self.kd_yaw = 70  # 13
-        self.ff_yaw = 0.0
+        self.kd_roll = 5.1 # 50; 14.3; 21(5s)
+        self.kd_pitch = 5.1 # 50
+        self.kd_yaw = 4.0  # 13
+        self.ff_yaw =0.0
 
-        self.kp_x = 0  # 19   # 0.3 # 0.1;0.2;0.3
-        self.kp_y = 0 # 19    0.3
-        self.kp_z = 20  # 20  # 10;
+        self.kp_x = -1.0  # 19   # 0.3 # 0.1;0.2;0.3
+        self.kp_y = -1.0 # 19    0.3
+        self.kp_z = 50  # 20  # 10;
 
-        self.kd_x = 0  # 1.87 # 0.9 # 0.4;0.6(12.5s) 0.7();0.9(10)
-        self.kd_y = 0  # 1.87 0.9
-        self.kd_z = 20  # 18  # 6;
+        self.kd_x = -1.65  # 1.87 # 0.9 # 0.4;0.6(12.5s) 0.7();0.9(10)
+        self.kd_y = -1.65  # 1.87 0.9
+        self.kd_z = 8  # 18  # 6;
 
         self.kp_vz = 1
         self.kd_vz = 0.1
@@ -128,6 +128,19 @@ class controller():
         M = np.array([(self.kp_roll * e_angle[0] + self.kd_roll * e_angular_rate[0]),
                       (self.kp_pitch * e_angle[1] + self.kd_pitch * e_angular_rate[1]),
                       (self.kp_yaw_rate * e_angular_rate[2] + self.kd_yaw_rate * e_dyaw_rate)])
+
+        output = np.zeros(4)
+        output[0] = F
+        output[1:] = M
+        return output
+
+    def att_alt_controller(self, state_des, state_now):
+        # acc_des = np.zeros(3)
+        e_z = state_des[2] - state_now[2]
+        e_vz = state_des[5] - state_now[5]
+        acc_z_des = self.kp_z * e_z + self.kd_z * e_vz  # self.kp_z * e_z + self.kd_z * e_vz
+        F = self.mass * self.g + self.mass * acc_z_des
+        M = self.attitude_controller(state_des, state_now)
 
         output = np.zeros(4)
         output[0] = F
