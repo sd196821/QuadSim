@@ -32,7 +32,7 @@ def rot2euler(R):
         n = np.linalg.norm(I - shouldBeIdentity)
         return n < 1e-3
 
-    assert(isRotationMatrix(R))
+    # assert(isRotationMatrix(R))
     # sy = np.sqrt(R[0, 0] * R[0, 0] + R[1, 0] * R[1, 0])
     # singular = sy < 1e-6
     #
@@ -44,13 +44,22 @@ def rot2euler(R):
     #     phi = np.arctan2(-R[1, 2], R[1, 1])
     #     theta = np.arctan2(-R[2, 0], sy)
     #     psi = 0
-    sy = -R[0, 2] / R[2, 2]
+    sp = -R[0, 2] / R[2, 2]
 
-    singular = (np.abs(sy) >= 1145.9153)  # 1e-6
-    assert (singular)
-    phi = np.arcsin(R[1, 2])
-    psi = np.arctan2(-R[1, 0] / np.cos(phi), R[1, 1] / np.cos(phi))
-    theta = np.arctan2(-R[0, 2] / np.cos(phi), R[2, 2] / np.cos(phi))
+    # singular = (np.abs(sp) >= 1145.9153)  # 1e-6
+    # assert (singular)
+    if R[1, 2] < +1.0:
+        phi = np.arcsin(R[1, 2])
+        psi = np.arctan2(-R[1, 0], R[1, 1])
+        theta = np.arctan2(-R[0, 2], R[2, 2])
+        if R[1, 2] < -1.0:
+            phi = -np.pi / 2.0
+            psi = np.arctan2(-R[1, 0], R[1, 1])
+            theta = 0
+    else:
+        phi = np.pi / 2.0
+        psi = np.arctan2(-R[1, 0], R[1, 1])
+        theta = 0
 
 
     return np.array([phi, theta, psi])
@@ -58,7 +67,7 @@ def rot2euler(R):
 
 
 def euler2rot(angle):
-    phi, theta, psi = angle
+    phi, theta, psi = angle[0], angle[1], angle[2]
     R = np.array([[np.cos(psi) * np.cos(theta) - np.sin(phi) * np.sin(psi) * np.sin(theta),
                    np.cos(theta) * np.sin(psi) + np.cos(psi) * np.sin(phi) * np.sin(theta),
                    -np.cos(phi) * np.sin(theta)],
@@ -115,26 +124,58 @@ def quat2euler(quat):
     Convert Quaternion to Euler Angles
     """
     quat_w, quat_x, quat_y, quat_z = quat[0], quat[1], quat[2], quat[3]
-    # euler_x = np.arctan2(2*quat_w*quat_x + 2*quat_y*quat_z, quat_w*quat_w - quat_x*quat_x - quat_y*quat_y + quat_z*quat_z)
-    # euler_y = -np.arcsin(2*quat_x*quat_z - 2*quat_w*quat_y)
-    # euler_z = np.arctan2(2*quat_w*quat_z+2*quat_x*quat_y, quat_w*quat_w + quat_x*quat_x - quat_y*quat_y - quat_z*quat_z)
-    #
+
+    r10 = 2.0 * (quat_x * quat_y - quat_w * quat_z)
+    r11 = quat_w * quat_w - quat_x * quat_x + quat_y * quat_y - quat_z * quat_z
+    r12 = 2.0 * (quat_w * quat_x + quat_y * quat_z)
+    r02 = 2.0 * (quat_x * quat_z - quat_w * quat_y)
+    r22 = quat_w * quat_w - quat_x * quat_x - quat_y * quat_y + quat_z * quat_z
+
+    if r12 < +1.0:
+        phi = np.arcsin(r12)
+        psi = np.arctan2(-r10, r11)
+        theta = np.arctan2(-r02, r22)
+        if r12 < -1.0:
+            phi = -np.pi / 2.0
+            psi = np.arctan2(-r10, r11)
+            theta = 0
+    else:
+        phi = np.pi / 2.0
+        psi = np.arctan2(-r10, r11)
+        theta = 0
+
     # return np.array([euler_x, euler_y, euler_z])  # in radians
-    t0 = +2.0 * (quat_w * quat_x + quat_y * quat_z)
-    t1 = +1.0 - 2.0 * (quat_x * quat_x + quat_y * quat_y)
-    roll_x = np.arctan2(t0, t1)
 
-    t2 = +2.0 * (quat_w * quat_y - quat_z * quat_x)
-    t2 = +1.0 if t2 > +1.0 else t2
-    t2 = -1.0 if t2 < -1.0 else t2
-    pitch_y = np.arcsin(t2)
+    # t0 = +2.0 * (quat_w * quat_x + quat_y * quat_z)
+    # t1 = +1.0 - 2.0 * (quat_x * quat_x + quat_y * quat_y)
+    # roll_x = np.arctan2(t0, t1)
+    #
+    # t2 = +2.0 * (quat_w * quat_y - quat_z * quat_x)
+    # t2 = +1.0 if t2 > +1.0 else t2
+    # t2 = -1.0 if t2 < -1.0 else t2
+    # pitch_y = np.arcsin(t2)
+    #
+    # t3 = +2.0 * (quat_w * quat_z + quat_x * quat_y)
+    # t4 = +1.0 - 2.0 * (quat_y * quat_y + quat_z * quat_z)
+    # yaw_z = np.arctan2(t3, t4)
 
-    t3 = +2.0 * (quat_w * quat_z + quat_x * quat_y)
-    t4 = +1.0 - 2.0 * (quat_y * quat_y + quat_z * quat_z)
-    yaw_z = np.arctan2(t3, t4)
+    # euler = rot2euler(quat2rot(quat))
 
-    return np.array([roll_x, pitch_y, yaw_z])
+    # t0 = +2.0 * (quat_w * quat_x + quat_y * quat_z)
+    # t1 = +1.0 - 2.0 * (quat_x * quat_x + quat_y * quat_y)
+    # roll_x = np.arctan2(t0, t1)
+    #
+    # t2 = +2.0 * (quat_w * quat_x + quat_y * quat_z)
+    # t2o = +1.0 if t2 > +1.0 else t2
+    # t2o = -1.0 if t2 < -1.0 else t2
+    #
+    # pitch_y = np.arcsin(t2o)
+    #
+    # t3 = +2.0 * (quat_w * quat_z + quat_x * quat_y)
+    # t4 = +1.0 - 2.0 * (quat_y * quat_y + quat_z * quat_z)
+    # yaw_z = np.arctan2(t3, t4)
 
+    return np.array([phi, theta, psi])  # in radians
 
 
 def euler2quat(euler):
@@ -146,10 +187,10 @@ def euler2quat(euler):
     cr = np.cos(roll * 0.5)
     sr = np.sin(roll * 0.5)
 
-    q0 = cr * cp * cy + sr * sp * sy
+    q0 = cr * cp * cy - sr * sp * sy
     q1 = sr * cp * cy - cr * sp * sy
-    q2 = cr * sp * cy + sr * cp * sy
-    q3 = cr * cp * sy - sr * sp * cy
+    q2 = sr * cp * sy + cr * sp * cy
+    q3 = cr * cp * sy + sr * sp * cy
     return np.array([q0, q1, q2, q3])
 
 

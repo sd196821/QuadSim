@@ -8,21 +8,21 @@ class controller():
     """Controller Class"""
 
     def __init__(self, L, mass):
-        self.kp_roll = -50  # 60; 10 ;15
-        self.kp_pitch = -50
+        self.kp_roll = 0  # 60; 10 ;15
+        self.kp_pitch = 0
         self.kp_yaw = 5  # 70
 
-        self.kd_roll = 28 # 50; 14.3; 21(5s)
-        self.kd_pitch = 28 # 50
+        self.kd_roll = 0 # 50; 14.3; 21(5s)
+        self.kd_pitch = 0 # 50
         self.kd_yaw = 70  # 13
         self.ff_yaw = 0.0
 
-        self.kp_x = 0.2  # 19   # 0.3 # 0.1;0.2;0.3
-        self.kp_y = 0.2 # 19    0.3
+        self.kp_x = 0  # 19   # 0.3 # 0.1;0.2;0.3
+        self.kp_y = 0 # 19    0.3
         self.kp_z = 20  # 20  # 10;
 
-        self.kd_x = 1.9  # 1.87 # 0.9 # 0.4;0.6(12.5s) 0.7();0.9(10)
-        self.kd_y = 1.9  # 1.87 0.9
+        self.kd_x = 0  # 1.87 # 0.9 # 0.4;0.6(12.5s) 0.7();0.9(10)
+        self.kd_y = 0  # 1.87 0.9
         self.kd_z = 20  # 18  # 6;
 
         self.kp_vz = 1
