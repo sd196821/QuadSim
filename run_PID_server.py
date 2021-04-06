@@ -48,7 +48,7 @@ u_all = np.zeros((total_step, 4))
 for t in range(total_step):
     state_last = state[t - 1, :]
     state_now = quad1.get_state()
-    u = control.PID(state_des, state_now)
+    u = control.rc_controller(state_des, state_now, state_last)
     # u[1:] = control.attitude_controller(state_des, state_now)
 
     # RC INPUT
@@ -63,9 +63,9 @@ for t in range(total_step):
     rpy[t, :] = quat2euler(state_now[6:10])
     sim_time[t] = quad1.get_time()
     # print("time : ", time[t])
-    u[1]=0
-    u[2]=0
-    u[4]=0
+    # u[1]=0
+    # u[2]=0
+    # u[3]=0
     quad1.step(u)
     pub_srv.send_state(t, state_now)
     time.sleep(quad1.dt)
