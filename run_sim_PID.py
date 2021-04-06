@@ -14,7 +14,7 @@ ini_state[0:3] = ini_pos
 ini_state[6:10] = ini_att
 ini_state[10:] = ini_angular_rate
 
-pos_des = np.array([-0.2, 0.2, 0.2])  # [x, y, z]
+pos_des = np.array([-0.0, 0.2, 0.2])  # [x, y, z]
 att_des = euler2quat(np.array([deg2rad(0.0), deg2rad(0.0), deg2rad(0.0)]))
 state_des = np.zeros(13)
 state_des[0:3] = pos_des

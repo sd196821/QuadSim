@@ -40,7 +40,6 @@ u = np.zeros(quad1.dim_u)
 
 total_step = 5000
 state = np.zeros((total_step, 13))
-state_des_all = np.zeros((total_step, 13))
 rpy = np.zeros((total_step, 3))
 time = np.zeros(total_step)
 u_all = np.zeros((total_step, 4))

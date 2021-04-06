@@ -1,23 +1,24 @@
 from dynamics.quadrotor import Drone
 from controller.PIDController import controller
-from utils.transform import quat2rot, rot2euler, euler2rot, rot2quat, rad2deg, deg2rad
+from utils.transform import quat2rot, rot2euler, euler2rot, rot2quat, rad2deg, deg2rad, euler2quat, quat2euler
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from server.pub_server import pub_server as srv
+from controller.JoystickController import RCInput
 import time
 
 # print(rot2quat(euler2rot(np.array([0, 0, 0]))))
-ini_pos = np.array([0, 0, 8])
-ini_att = rot2quat(euler2rot(np.array([deg2rad(0), deg2rad(0), 0])))
+ini_pos = np.array([50, 3, 0.5])
+ini_att = euler2quat(np.array([deg2rad(0), deg2rad(0), 0]))
 ini_angular_rate = np.array([0, deg2rad(0), 0])
 ini_state = np.zeros(13)
 ini_state[0:3] = ini_pos
 ini_state[6:10] = ini_att
 ini_state[10:] = ini_angular_rate
 
-att_des = rot2quat(euler2rot(np.array([deg2rad(0), deg2rad(0), deg2rad(0)])))
-pos_des = np.array([0.1, 0, 8.2])  # [x, y, z]
+att_des = euler2quat(np.array([deg2rad(0), deg2rad(0), deg2rad(0)]))
+pos_des = np.array([50.0, 3, 0.5])  # [x, y, z]
 state_des = np.zeros(13)
 state_des[0:3] = pos_des
 state_des[6:10] = att_des
@@ -30,12 +31,14 @@ pub_srv = srv(1)
 
 control = controller(quad1.get_arm_length(), quad1.get_mass())
 
+rc = RCInput('/dev/input/event28')
+rc.start()
 # Control Command
 u = np.zeros(quad1.dim_u)
 # u[0] = quad1.get_mass() * 9.81
 # u[3] = 0.2
 
-total_step = 3000
+total_step = 5000
 state = np.zeros((total_step, 13))
 rpy = np.zeros((total_step, 3))
 sim_time = np.zeros(total_step)
@@ -43,14 +46,26 @@ u_all = np.zeros((total_step, 4))
 
 # Run simulation
 for t in range(total_step):
+    state_last = state[t - 1, :]
     state_now = quad1.get_state()
     u = control.PID(state_des, state_now)
     # u[1:] = control.attitude_controller(state_des, state_now)
+
+    # RC INPUT
+    rc_des = rc.rc_in
+    state_des[5] = (rc_des[0]-1021) / 1021
+    att_des = np.array([(rc_des[1]-1024.0) * np.pi / 3.0 / 2047.0, (rc_des[2]-1018) * np.pi / 3.0 / 2047.0, deg2rad(0.0)])
+    state_des[6:10] = euler2quat(att_des)
+    state_des[12] = (rc_des[3] - 1100) * np.pi / 6.0 / 2047.0
+
     u_all[t, :] = u
     state[t, :] = state_now
-    rpy[t, :] = rot2euler(quat2rot(state_now[6:10]))
+    rpy[t, :] = quat2euler(state_now[6:10])
     sim_time[t] = quad1.get_time()
     # print("time : ", time[t])
+    u[1]=0
+    u[2]=0
+    u[4]=0
     quad1.step(u)
     pub_srv.send_state(t, state_now)
     time.sleep(quad1.dt)
