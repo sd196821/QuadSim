@@ -9,7 +9,7 @@ from controller.JoystickController import RCInput
 import time
 
 # print(rot2quat(euler2rot(np.array([0, 0, 0]))))
-ini_pos = np.array([50, 3, 0.5])
+ini_pos = np.array([3, -50, 0.5])
 ini_att = euler2quat(np.array([deg2rad(0), deg2rad(0), 0]))
 ini_angular_rate = np.array([0, deg2rad(0), 0])
 ini_state = np.zeros(13)
@@ -18,7 +18,7 @@ ini_state[6:10] = ini_att
 ini_state[10:] = ini_angular_rate
 
 att_des = euler2quat(np.array([deg2rad(0), deg2rad(0), deg2rad(0)]))
-pos_des = np.array([50.0, 3, 0.5])  # [x, y, z]
+pos_des = np.array([3, -50, 0.5])  # [x, y, z]
 state_des = np.zeros(13)
 state_des[0:3] = pos_des
 state_des[6:10] = att_des
@@ -38,7 +38,7 @@ u = np.zeros(quad1.dim_u)
 # u[0] = quad1.get_mass() * 9.81
 # u[3] = 0.2
 
-total_step = 5000
+total_step = 1000
 state = np.zeros((total_step, 13))
 rpy = np.zeros((total_step, 3))
 sim_time = np.zeros(total_step)
@@ -48,7 +48,7 @@ u_all = np.zeros((total_step, 4))
 for t in range(total_step):
     state_last = state[t - 1, :]
     state_now = quad1.get_state()
-    u = control.rc_controller(state_des, state_now, state_last)
+
     # u[1:] = control.attitude_controller(state_des, state_now)
 
     # RC INPUT
@@ -57,6 +57,7 @@ for t in range(total_step):
     att_des = np.array([(rc_des[1]-1024.0) * np.pi / 3.0 / 2047.0, (rc_des[2]-1018) * np.pi / 3.0 / 2047.0, deg2rad(0.0)])
     state_des[6:10] = euler2quat(att_des)
     state_des[12] = (rc_des[3] - 1100) * np.pi / 6.0 / 2047.0
+    u = control.rc_controller(state_des, state_now, state_last)
 
     u_all[t, :] = u
     state[t, :] = state_now
