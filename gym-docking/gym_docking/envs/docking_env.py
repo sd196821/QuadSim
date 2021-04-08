@@ -37,6 +37,7 @@ class DockingEnv(gym.Env):
         self.target_ini_state[0:3] = target_ini_pos
         self.target_ini_state[6:10] = target_ini_att
         self.target_ini_state[10:] = target_ini_angular_rate
+
         #Target Final State
         target_pos_des = np.array([10, -50, 5])  # [x, y, z]
         target_att_des = euler2quat(np.array([deg2rad(0), deg2rad(0), deg2rad(0)]))
@@ -71,6 +72,19 @@ class DockingEnv(gym.Env):
 
 
     def step(self, action):
+        reward = 0.0
+        self.state = self.chaser.step(action)
+        # done1 = bool(-self.pos_threshold < np.linalg.norm(self.state[0:3] - self.state_des[0:3],
+        # 2) < self.pos_threshold and -self.vel_threshold < np.linalg.norm(self.state[3:6] - self.state_des[3:6],
+        # 2) < self.vel_threshold)\ or
+
+        rpy = quat2euler(self.state[6:10])
+        pos_error = self.state_des[0:3] - self.state[0:3]
+        vel_error = self.state_des[3:6] - self.state[3:6]
+        att_error = rot2euler(quat2rot(self.state_des[6:10])) - rpy
+        att_vel_error = self.state_des[10:] - self.state[10:]
+
+
 
 
     def reset(self):

@@ -50,7 +50,7 @@ class HoveringEnv(gym.Env):
         # 2) < self.pos_threshold and -self.vel_threshold < np.linalg.norm(self.state[3:6] - self.state_des[3:6],
         # 2) < self.vel_threshold)\ or
 
-        rpy = rot2euler(quat2rot(self.state[6:10]))
+        rpy = quat2euler(self.state[6:10])
         pos_error = self.state_des[0:3] - self.state[0:3]
         vel_error = self.state_des[3:6] - self.state[3:6]
         att_error = rot2euler(quat2rot(self.state_des[6:10])) - rpy
