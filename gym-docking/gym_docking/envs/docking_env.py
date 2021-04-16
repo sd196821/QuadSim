@@ -71,18 +71,36 @@ class DockingEnv(gym.Env):
         # self.reset()
 
 
-    def step(self, action):
+    def step(self, action_chaser, action_target):
         reward = 0.0
-        self.state = self.chaser.step(action)
+        self.state_target = self.target.step(action_target)
+        self.state_chaser = self.chaser.step(action_chaser)
         # done1 = bool(-self.pos_threshold < np.linalg.norm(self.state[0:3] - self.state_des[0:3],
         # 2) < self.pos_threshold and -self.vel_threshold < np.linalg.norm(self.state[3:6] - self.state_des[3:6],
         # 2) < self.vel_threshold)\ or
 
-        rpy = quat2euler(self.state[6:10])
-        pos_error = self.state_des[0:3] - self.state[0:3]
-        vel_error = self.state_des[3:6] - self.state[3:6]
-        att_error = rot2euler(quat2rot(self.state_des[6:10])) - rpy
-        att_vel_error = self.state_des[10:] - self.state[10:]
+        # rpy = quat2euler(self.state[6:10])
+        # pos_error = self.state_des[0:3] - self.state[0:3]
+        # vel_error = self.state_des[3:6] - self.state[3:6]
+        # att_error = rot2euler(quat2rot(self.state_des[6:10])) - rpy
+        # att_vel_error = self.state_des[10:] - self.state[10:]
+
+        R_I2B = quat2rot(self.state_target[6:10])
+        R_I2A = quat2rot(self.state_chaser[6:10])
+        R_A2I = R_I2A.transpose()
+
+        # dock port relative state
+        chaser_dp = self.chaser.get_dock_port_state() # drone A
+        target_dp = self.target.get_dock_port_state() # drone B
+
+        # relative pos & vel error
+        dp_rel_pos = target_dp.pos - chaser_dp.pos
+        dp_rel_vel = target_dp.vel - chaser_dp.vel
+
+        # relative attitude & angular velocity error
+        R_A2B = R_I2B @ R_A2I
+
+
 
 
 
