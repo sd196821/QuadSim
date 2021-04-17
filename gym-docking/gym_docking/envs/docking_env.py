@@ -17,8 +17,9 @@ class DockingEnv(gym.Env):
 
         self.state_chaser = np.zeros(13)
         self.state_target = np.zeros(13)
+        self.rel_state = np.zeros(12)
 
-        self.steps_beyond_done = None
+        # self.steps_beyond_done = None
 
         #Chaser Initial State
         chaser_ini_pos = np.array([3, -50, 0.5])
@@ -58,26 +59,29 @@ class DockingEnv(gym.Env):
         target_low = self.target.state_lim_low
         target_high = self.target.state_lim_high
 
-        #obs rel info: 13x1 [pos,velocity,rpy,rpy_rate]
+        # obs rel info: 12x1 [rel_pos, rel_vel, rel_rpy, rel_rpy_rate]
         obs_low = np.array([-20, -100, 0, -10, -10, -10, -np.pi, -np.pi/2, -np.pi, -10 * 2 * np.pi, -10 * 2 * np.pi, -10 * 2 * np.pi])
         obs_high = np.array([20, 0, 100, 10, 10, 10, np.pi, np.pi/2, np.pi, 10 * 2 * np.pi, 10 * 2 * np.pi, 10 * 2 * np.pi])
 
         # rel_low = np.array([60, 0, 100, 10, 10, 10, 1, 1, 1, 1, 10 * 2 * np.pi, 10 * 2 * np.pi, 10 * 2 * np.pi])
 
-        self.action_space = spaces.Box(low=np.array([0, -10, -10, -10]), high=np.array([10, 10, 10, 10]))
+        self.action_space = spaces.Box(low=np.array([0, -10, -10, -10, 0, -10, -10, -10]), high=np.array([10, 10, 10, 10, 10, 10, 10, 10,]))
         self.observation_space = spaces.Box(low=obs_low, high=obs_high)
 
         self.seed()
         # self.reset()
 
 
-    def step(self, action_chaser, action_target):
+    def step(self, action):
         reward = 0.0
+        action_chaser = action[0:4]
+        action_target = action[4:]
         self.state_target = self.target.step(action_target)
         self.state_chaser = self.chaser.step(action_chaser)
-        # done1 = bool(-self.pos_threshold < np.linalg.norm(self.state[0:3] - self.state_des[0:3],
-        # 2) < self.pos_threshold and -self.vel_threshold < np.linalg.norm(self.state[3:6] - self.state_des[3:6],
-        # 2) < self.vel_threshold)\ or
+
+        # dock port relative state
+        chaser_dp = self.chaser.get_dock_port_state()  # drone A
+        target_dp = self.target.get_dock_port_state()  # drone B
 
         # rpy = quat2euler(self.state[6:10])
         # pos_error = self.state_des[0:3] - self.state[0:3]
@@ -85,38 +89,7 @@ class DockingEnv(gym.Env):
         # att_error = rot2euler(quat2rot(self.state_des[6:10])) - rpy
         # att_vel_error = self.state_des[10:] - self.state[10:]
 
-        R_I2B = quat2rot(self.state_target[6:10])
-        R_I2A = quat2rot(self.state_chaser[6:10])
-        R_A2I = R_I2A.transpose()
-
-        # dock port relative state
-        chaser_dp = self.chaser.get_dock_port_state() # drone A
-        target_dp = self.target.get_dock_port_state() # drone B
-
-        # relative pos & vel error
-        dp_rel_pos = target_dp.pos - chaser_dp.pos
-        dp_rel_vel = target_dp.vel - chaser_dp.vel
-
-        # relative attitude & angular velocity error
-        R_A2B = R_I2B @ R_A2I
-
-        rel_euler_A2B = rot2euler(R_A2B)
-        phi_A2B = rel_euler_A2B[0]
-        theta_A2B = rel_euler_A2B[1]
-        psi_A2B = rel_euler_A2B[2]
-
-        omega_B = self.state_target[10:]
-        omega_A = self.state_chaser[10:]
-        rel_A2B = omega_B - omega_A
-        rel_A2B_inB = R_I2B @ omega_B - R_A2B @ R_I2A @ omega_A
-        p_A2B_inB = rel_A2B_inB[0]
-        q_A2B_inB = rel_A2B_inB[1]
-        r_A2B_inB = rel_A2B_inB[2]
-
-        # relative angular rate
-        dphi_A2B = p_A2B_inB * np.cos(theta_A2B) + r_A2B_inB * np.sin(theta_A2B)
-        dtheta_A2B = q_A2B_inB - np.tan(phi_A2B) * (r_A2B_inB * np.cos(theta_A2B) - p_A2B_inB * np.sin(theta_A2B))
-        dpsi_A2B = (r_A2B_inB * np.cos(theta_A2B) - p_A2B_inB * np.sin(theta_A2B)) / np.cos(phi_A2B)
+        self.rel_state = state2rel(self.state_chaser, self.state_target, chaser_dp, target_dp)
 
         done_final = bool((np.linalg.norm(dp_rel_pos, 2) < 0.001)
                     and (np.linalg.norm(dp_rel_vel, 2) < 0.01)
@@ -130,37 +103,80 @@ class DockingEnv(gym.Env):
 
         if done_final:
             reward_docked = 1000
+        else:
+            reward_docked = 0
 
         #tbc
-        if not done:
-            reward = reward_docked + 10.0 - 10 * (np.linalg.norm(dp_rel_pos, 2)) \
-                     - np.linalg.norm(dp_rel_vel, 2) \
-                     - np.linalg.norm(rel_euler_A2B, 2)
-                     #- np.linalg.norm(att_vel_error, 2)
-        elif self.steps_beyond_done is None:
-            self.steps_beyond_done = 0
-            reward = -10
+        if done_overlimit:
+            reward = - 100
+        elif done_final:
+            reward = reward_docked
         else:
-            if self.steps_beyond_done == 0:
-                logger.warn("Calling step though done!")
-                self.steps_beyond_done += 1
-                reward = 0.0
+            reward = -(np.linalg.norm(dp_rel_pos, 2)) \
+            - np.linalg.norm(dp_rel_vel, 2) \
+            - np.linalg.norm(rel_euler_A2B, 2)
 
-
-
-
-
-
+        return self.rel_state, reward, done, {}
 
 
     def reset(self):
+        state_chaser = self.chaser.reset(self.chaser_ini_state)
+        state_target = self.target.reset(self.target_ini_state)
+        chaser_dp = self.chaser.get_dock_port_state()  # drone A
+        target_dp = self.target.get_dock_port_state()  # drone B
+        out = state2rel(state_chaser, state_target, chaser_dp, target_dp)
+        return out
 
 
-    def render(self):
-
+    def render(self, mode='human'):
+        return None
 
     def close(self):
+        return None
 
+    def seed(self, seed=None):
+        self.np_random, seed = seeding.np_random(seed)
+        return [seed]
+
+def state2rel(state_chaser, state_target, chaser_dp, target_dp):
+    R_I2B = quat2rot(state_target[6:10])
+    R_I2A = quat2rot(state_chaser[6:10])
+    R_A2I = R_I2A.transpose()
+
+    # relative pos & vel error
+    dp_rel_pos = target_dp.pos - chaser_dp.pos
+    dp_rel_vel = target_dp.vel - chaser_dp.vel
+
+    # relative attitude & angular velocity error
+    R_A2B = R_I2B @ R_A2I
+
+    rel_euler_A2B = rot2euler(R_A2B)
+    phi_A2B = rel_euler_A2B[0]
+    theta_A2B = rel_euler_A2B[1]
+    psi_A2B = rel_euler_A2B[2]
+
+    omega_B = state_target[10:]
+    omega_A = state_chaser[10:]
+    rel_A2B = omega_B - omega_A
+    rel_A2B_inB = R_I2B @ omega_B - R_A2B @ R_I2A @ omega_A
+    p_A2B_inB = rel_A2B_inB[0]
+    q_A2B_inB = rel_A2B_inB[1]
+    r_A2B_inB = rel_A2B_inB[2]
+
+    # relative angular rate
+    dphi_A2B = p_A2B_inB * np.cos(theta_A2B) + r_A2B_inB * np.sin(theta_A2B)
+    dtheta_A2B = q_A2B_inB - np.tan(phi_A2B) * (r_A2B_inB * np.cos(theta_A2B) - p_A2B_inB * np.sin(theta_A2B))
+    dpsi_A2B = (r_A2B_inB * np.cos(theta_A2B) - p_A2B_inB * np.sin(theta_A2B)) / np.cos(phi_A2B)
+
+    rel_state = np.zeros(12)
+    rel_state[0:3] = dp_rel_pos
+    rel_state[3:6] = dp_rel_vel
+    rel_state[6:9] = rel_euler_A2B
+    rel_state[9] = dphi_A2B
+    rel_state[10] = dtheta_A2B
+    rel_state[11] = dpsi_A2B
+
+    return rel_state
 
 
 
