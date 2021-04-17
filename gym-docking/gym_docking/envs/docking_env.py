@@ -100,6 +100,54 @@ class DockingEnv(gym.Env):
         # relative attitude & angular velocity error
         R_A2B = R_I2B @ R_A2I
 
+        rel_euler_A2B = rot2euler(R_A2B)
+        phi_A2B = rel_euler_A2B[0]
+        theta_A2B = rel_euler_A2B[1]
+        psi_A2B = rel_euler_A2B[2]
+
+        omega_B = self.state_target[10:]
+        omega_A = self.state_chaser[10:]
+        rel_A2B = omega_B - omega_A
+        rel_A2B_inB = R_I2B @ omega_B - R_A2B @ R_I2A @ omega_A
+        p_A2B_inB = rel_A2B_inB[0]
+        q_A2B_inB = rel_A2B_inB[1]
+        r_A2B_inB = rel_A2B_inB[2]
+
+        # relative angular rate
+        dphi_A2B = p_A2B_inB * np.cos(theta_A2B) + r_A2B_inB * np.sin(theta_A2B)
+        dtheta_A2B = q_A2B_inB - np.tan(phi_A2B) * (r_A2B_inB * np.cos(theta_A2B) - p_A2B_inB * np.sin(theta_A2B))
+        dpsi_A2B = (r_A2B_inB * np.cos(theta_A2B) - p_A2B_inB * np.sin(theta_A2B)) / np.cos(phi_A2B)
+
+        done_final = bool((np.linalg.norm(dp_rel_pos, 2) < 0.001)
+                    and (np.linalg.norm(dp_rel_vel, 2) < 0.01)
+                    and (np.abs(phi_A2B) < (deg2rad(10.0)))
+                    and (np.abs(theta_A2B) < (deg2rad(10.0)))
+                    and (np.abs(psi_A2B) < (deg2rad(10.0))))
+
+        done_overlimit = bool(np.linalg.norm(dp_rel_pos, 2) > 10)
+
+        done = bool(done_final or done_overlimit)
+
+        if done_final:
+            reward_docked = 1000
+
+        #tbc
+        if not done:
+            reward = reward_docked + 10.0 - 10 * (np.linalg.norm(dp_rel_pos, 2)) \
+                     - np.linalg.norm(dp_rel_vel, 2) \
+                     - np.linalg.norm(rel_euler_A2B, 2)
+                     #- np.linalg.norm(att_vel_error, 2)
+        elif self.steps_beyond_done is None:
+            self.steps_beyond_done = 0
+            reward = -10
+        else:
+            if self.steps_beyond_done == 0:
+                logger.warn("Calling step though done!")
+                self.steps_beyond_done += 1
+                reward = 0.0
+
+
+
 
 
 
