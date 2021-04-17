@@ -167,16 +167,16 @@ class Drone():
         return self.mass
 
     def get_dock_port_state(self):
-        dock_port = None
+        dock_port = {'pos':np.zeros(3), 'vel':np.zeros(3), 'quat':np.zeros(4), 'angular_rate':np.zeros(3)}
         R_w2b = self.quat2rot(self.state[6:10])
         R_b2w = R_w2b.transpose()
-        dock_port.pos = self.state[0:3] + R_b2w @ self.dock_port_inB_pos
-        dock_port.quat = self.rot2quat(self.dock_port_inB_att @ R_w2b)
+        dock_port['pos'] = self.state[0:3] + R_b2w @ self.dock_port_inB_pos
+        dock_port['quat']  = self.rot2quat(self.dock_port_inB_att @ R_w2b)
         w_sk = np.array([[0, -self.state[12], self.state[11]],
                          [self.state[12], 0, -self.state[10]],
                          [-self.state[11], self.state[10], 0]])
-        dock_port.vel = self.state[3:6] + w_sk @ (R_b2w @ self.dock_port_inB_pos)
-        dock_port.angular_rate = self.state[10:]
+        dock_port['vel'] = self.state[3:6] + w_sk @ (R_b2w @ self.dock_port_inB_pos)
+        dock_port['angular_rate'] = self.state[10:]
         return dock_port
 
     @staticmethod
