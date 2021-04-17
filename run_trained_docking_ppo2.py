@@ -10,7 +10,7 @@ from utils.transform import quat2rot, rot2euler, euler2rot, rot2quat, rad2deg, d
 
 env = DummyVecEnv([lambda: gym.make("gym_docking:docking-v0")])
 # gym.make('gym_docking:hovering-v0')
-model = PPO2.load('ppo2_hover')
+model = PPO2.load('ppo2_docking')
 
 total_step = 1000
 state = np.zeros((total_step, 12))
