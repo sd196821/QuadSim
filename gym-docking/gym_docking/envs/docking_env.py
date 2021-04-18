@@ -97,40 +97,42 @@ class DockingEnv(gym.Env):
         # att_vel_error = self.state_des[10:] - self.state[10:]
 
         self.rel_state = state2rel(self.state_chaser, self.state_target, chaser_dp, target_dp)
-
+        done_final = False
+        done_overlimit = False
         done_final = bool((np.linalg.norm(self.rel_state[0:3], 2) < 0.001)
                           and (np.linalg.norm(self.rel_state[3:6], 2) < 0.01)
                           and (np.abs(self.rel_state[6]) < (deg2rad(10.0)))
                           and (np.abs(self.rel_state[7]) < (deg2rad(10.0)))
-                          and (np.abs(self.rel_state[8]) < (deg2rad(10.0))))
+                          and (deg2rad(95.0) > np.abs(self.rel_state[8]) > deg2rad(85.0)))
 
         done_overlimit = bool(np.linalg.norm(self.rel_state[0:3], 2) > 10)
 
         done = bool(done_final or done_overlimit)
 
         if done_final:
-            reward_docked = 1000
+            reward_docked = 0.2
         else:
             reward_docked = 0
 
         # tbc
         if done_overlimit:
-            reward = - 100
+            reward = - 0.02
         elif done_final:
             reward = reward_docked
         else:
-            reward = -(np.linalg.norm(self.rel_state[0:3], 2)) \
-                     - np.linalg.norm(self.rel_state[3:6], 2) \
-                     - np.linalg.norm(self.rel_state[6:9], 2)
+            reward = -0.002*np.linalg.norm(self.rel_state[0:3], 2) \
+                     - 0.0002*np.linalg.norm(self.rel_state[3:6], 2) \
+                     - 0.002*np.linalg.norm(self.rel_state[6:9], 2)
+        reward -= 0.1
         info = {'chaser': self.state_chaser, 'target': self.state_target}
         return self.rel_state, reward, done, info
 
     def reset(self):
-        state_chaser = self.chaser.reset(self.chaser_ini_state)
-        state_target = self.target.reset(self.target_ini_state)
+        self.state_chaser = self.chaser.reset(self.chaser_ini_state)
+        self.state_target = self.target.reset(self.target_ini_state)
         chaser_dp = self.chaser.get_dock_port_state()  # drone A
         target_dp = self.target.get_dock_port_state()  # drone B
-        out = state2rel(state_chaser, state_target, chaser_dp, target_dp)
+        out = state2rel(self.state_chaser, self.state_target, chaser_dp, target_dp)
         return out
 
     def render(self, mode='human'):

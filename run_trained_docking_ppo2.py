@@ -41,11 +41,11 @@ for t in range(total_step):
     # print('euler:', state_now[9:])
     # print(state_now)
     # print(state)
-
-    if done:
+    tf = t
+    #if done:
         #obs = env.reset()
-        tf = t
-        break
+    #    tf = t
+        #break
 
 
 print(state.shape)
