@@ -122,8 +122,8 @@ class DockingEnv(gym.Env):
             reward = -(np.linalg.norm(self.rel_state[0:3], 2)) \
                      - np.linalg.norm(self.rel_state[3:6], 2) \
                      - np.linalg.norm(self.rel_state[6:9], 2)
-
-        return self.rel_state, reward, done, {}
+        info = {'chaser': self.state_chaser, 'target': self.state_target}
+        return self.rel_state, reward, done, info
 
     def reset(self):
         state_chaser = self.chaser.reset(self.chaser_ini_state)
