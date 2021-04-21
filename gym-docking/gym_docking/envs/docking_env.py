@@ -25,24 +25,26 @@ class DockingEnv(gym.Env):
         # self.steps_beyond_done = None
 
         # Chaser Initial State
-        chaser_ini_pos = np.array([3, -50, 0.5])
+        chaser_ini_pos = np.array([8, -50, 5]) + np.random.uniform(-0.1, 0.1, (3,))
         chaser_ini_att = euler2quat(np.array([deg2rad(0), deg2rad(0), 0]))
         chaser_ini_angular_rate = np.array([0, deg2rad(0), 0])
+        chaser_dock_port = np.array([0.1, 0, 0])
         self.chaser_ini_state = np.zeros(13)
         self.chaser_ini_state[0:3] = chaser_ini_pos
         self.chaser_ini_state[6:10] = chaser_ini_att
         self.chaser_ini_state[10:] = chaser_ini_angular_rate
-        self.chaser.reset(self.chaser_ini_state)
+        self.chaser.reset(self.chaser_ini_state, chaser_dock_port)
 
         # Target Initial State
         target_ini_pos = np.array([10, -50, 5])
         target_ini_att = euler2quat(np.array([deg2rad(0), deg2rad(0), 0]))
         target_ini_angular_rate = np.array([0, deg2rad(0), 0])
+        target_dock_port = np.array([-0.1, 0, 0])
         self.target_ini_state = np.zeros(13)
         self.target_ini_state[0:3] = target_ini_pos
         self.target_ini_state[6:10] = target_ini_att
         self.target_ini_state[10:] = target_ini_angular_rate
-        self.target.reset(self.target_ini_state)
+        self.target.reset(self.target_ini_state, target_dock_port)
 
         # Target Final State
         target_pos_des = np.array([10, -50, 5])  # [x, y, z]
@@ -72,15 +74,19 @@ class DockingEnv(gym.Env):
 
         # rel_low = np.array([60, 0, 100, 10, 10, 10, 1, 1, 1, 1, 10 * 2 * np.pi, 10 * 2 * np.pi, 10 * 2 * np.pi])
 
-        self.action_space = spaces.Box(low=np.array([0, -10, -10, -10]), high=np.array([10, 10, 10, 10]))
+        self.action_space = spaces.Box(low=np.array([-1.0, -1.0, -1.0, -1.0]), high=np.array([1.0, 1.0, 1.0, 1.0]))
         self.observation_space = spaces.Box(low=obs_low, high=obs_high)
+
+        self.action_mean = np.array([1.0, 1.0, 1.0, 1.0]) * self.chaser.mass * self.chaser.gravity / 4.0
+        self.action_std = np.array([1.0, 1.0, 1.0, 1.0]) * self.chaser.mass * self.chaser.gravity
 
         self.seed()
         # self.reset()
 
     def step(self, action):
         reward = 0.0
-        action_chaser = action
+        action_chaser = self.chaser.rotor2control @ (self.action_mean * action + self.action_std)
+
         # action_target = action[4:]
         action_target = self.target_controller.PID(self.target_state_des, self.state_target)
         self.state_target = self.target.step(action_target)
@@ -103,28 +109,35 @@ class DockingEnv(gym.Env):
                           and (np.linalg.norm(self.rel_state[3:6], 2) < 0.01)
                           and (np.abs(self.rel_state[6]) < (deg2rad(10.0)))
                           and (np.abs(self.rel_state[7]) < (deg2rad(10.0)))
-                          and (deg2rad(95.0) > np.abs(self.rel_state[8]) > deg2rad(85.0)))
-
+                          # and (deg2rad(95.0) > np.abs(self.rel_state[8]) > deg2rad(85.0)))
+                          and (np.abs(self.rel_state[8]) < deg2rad(5.0)))
         done_overlimit = bool(np.linalg.norm(self.rel_state[0:3], 2) > 10)
 
         done = bool(done_final or done_overlimit)
 
         if done_final:
-            reward_docked = 0.2
+            reward_docked = 0.5
         else:
             reward_docked = 0
 
+        reward_action = -0.002 * np.linalg.norm(action[:], 2)
+
         # tbc
         if done_overlimit:
-            reward = - 0.02
+            reward = - 0.2
         elif done_final:
             reward = reward_docked
         else:
             reward = -0.002*np.linalg.norm(self.rel_state[0:3], 2) \
                      - 0.0002*np.linalg.norm(self.rel_state[3:6], 2) \
-                     - 0.002*np.linalg.norm(self.rel_state[6:9], 2)
-        reward -= 0.1
-        info = {'chaser': self.state_chaser, 'target': self.state_target}
+                     - 0.002*np.linalg.norm(self.rel_state[6:9], 2) \
+                     + reward_action
+
+        reward -= 0.01
+        info = {'chaser': self.state_chaser,
+                'target': self.state_target,
+                'done_final': done_final,
+                'done_overlimit': done_overlimit}
         return self.rel_state, reward, done, info
 
     def reset(self):

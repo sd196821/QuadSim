@@ -39,7 +39,7 @@ if __name__ == '__main__':
 
     # model = ACKTR(MlpPolicy, env, verbose=1)
 
-    checkpoint_callback = CheckpointCallback(save_freq=10000, save_path='./logs/',
+    checkpoint_callback = CheckpointCallback(save_freq=int(1e4), save_path='./logs/',
                                              name_prefix='rl_model')
 
     model = PPO2(policy='MlpPolicy', env=env, verbose=1,
@@ -51,17 +51,17 @@ if __name__ == '__main__':
                  # n_steps=math.floor(cfg['env']['max_time'] / cfg['env']['ctl_dt']),
                  n_steps=1000,
                  ent_coef=0.00,
-                 learning_rate=3e-3,
+                 learning_rate=5e-2,
                  vf_coef=0.5,
                  max_grad_norm=0.5,
                  nminibatches=1,
                  noptepochs=10,
                  cliprange=0.2)
     # load trained model
-    model.load("./ppo2_docking.zip", env=env, tensorboard_log="./ppo2_docking_tensorboard/")
+    # model.load("./ppo2_docking.zip", env=env, tensorboard_log="./ppo2_docking_tensorboard/")
 
-    model.learn(total_timesteps=500000, callback=checkpoint_callback)
-    model.save("ppo2_docking_500K_1M")
+    model.learn(total_timesteps=int(1e6), callback=checkpoint_callback)
+    model.save("ppo2_docking")
 
 
 # model.learn(total_timesteps=250000)

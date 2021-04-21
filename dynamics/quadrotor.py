@@ -39,6 +39,11 @@ class Drone():
 
         self.integrator = None  # RK45(self.f, self.t0, self.state, self.tf)
 
+        self.kf = 6.11e-8
+        self.km = 1.5e-9
+        self.motor_lambda = self.km / self.kf
+
+
         self.A = np.array([[0.25, 0, -0.5/self.arm_length],
                            [0.25, 0.5/self.arm_length, 0],
                            [0.25, 0, 0.5/self.arm_length],
@@ -48,16 +53,25 @@ class Drone():
                            [0, self.arm_length, 0, -self.arm_length],
                            [-self.arm_length, 0, self.arm_length, 0]])
 
+        self.rotor2control = np.array([[1, 1, 1, 1],
+                           [0, self.arm_length, 0, -self.arm_length],
+                           [-self.arm_length, 0, self.arm_length, 0],
+                           [self.motor_lambda, -self.motor_lambda, self.motor_lambda, -self.motor_lambda]])
+
         # self.dock_port_inB = None
         self.dock_port_inB_pos = np.array([0.05, 0, 0])
         self.dock_port_inB_att = self.euler2rot(np.array([0, 0, 0]))
 
-    def reset(self, reset_state=None):
+    def reset(self, reset_state=None, dock_port=None):
         """
         Reset state, control and integrator
         """
         if reset_state is not None:
             self.initial_state = reset_state
+
+        if dock_port is not None:
+            self.dock_port_inB_pos = dock_port
+
         self.state = self.initial_state
         self.u = np.zeros(self.dim_u)
         self.integrator = RK45(self.f, self.t0, self.state, self.dt)
