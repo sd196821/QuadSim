@@ -1,3 +1,5 @@
+from stable_baselines.gail import generate_expert_traj
+
 import gym
 # from stable_baselines.common.policies import MlpPolicy
 from stable_baselines import PPO2
@@ -8,7 +10,8 @@ import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-from utils.transform import quat2rot, rot2euler, euler2rot, rot2quat, rad2deg, deg2rad, quat2euler
+from utils.transform import quat2rot, rot2euler, euler2rot, rot2quat, rad2deg, deg2rad, quat2euler, euler2quat
+from controller.PIDController import controller
 
 def info2array(info,tf):
     chaser_st = np.zeros((tf, 13))
@@ -21,27 +24,51 @@ def info2array(info,tf):
 
 #env = DummyVecEnv([lambda: gym.make("gym_docking:docking-v0")])
 env =  gym.make('gym_docking:docking-v0')
-model = PPO2.load('ppo2_docking_2M.zip')
 
 total_step = 1000
+rel_state = np.zeros((total_step, 12))
 state = np.zeros((total_step, 12))
 rpy = np.zeros((total_step, 3))
 time = np.zeros(total_step)
 u_all = np.zeros((total_step, 4))
+
 done = False
 tf = 0
 info_lst = []
 
 obs = env.reset()
+
+control = controller(env.chaser.get_arm_length(), env.chaser.get_mass())
+print(env.chaser.get_arm_length())
+
+state_des = env.chaser_ini_state
+
+kp=0.35
+kd = 0
+
 for t in range(total_step):
-    action, states = model.predict(obs, deterministic=True)
+    # action, states = model.predict(obs, deterministic=True)
+    obss = obs.flatten()
+    if t != 0 :
+        state_last = (info_lst[t-1])['chaser']
+    else:
+        state_last = env.chaser_ini_state
+    # rel_state[t, 0:3] = obss[0:3]
+    # rel_state[t, 3:6] = obss[3:6]
+    # rel_state[t, 6:10] = euler2quat(obss[6:9])
+    # rel_state[t, 10:] = obss[9:]
+    # state_now = rel_state[t, :]
+    des_vel = kp * (env.state_target[0:3] - env.state_chaser[0:3]) + kd * ( - env.state_chaser[3:6])
+    state_des[3:6] = des_vel
+    u = control.vel_controller(state_des, state_now, state_laskt)
+    action = control.vel_controller(env.state_target, env.state_chaser)
     obs, reward, done, info = env.step(action)
 
-    state_now = obs.flatten()
+    # state_now = obs.flatten()
     # print('u: ', action)
     # print('s: ', obs.flatten())
     u_all[t, :] = action.flatten()
-    state[t, :] = state_now
+    state[t, :] = obss
     # rpy[t, :] = quat2eul(state_now[6:9]))
 
     time[t] = t
@@ -53,15 +80,11 @@ for t in range(total_step):
     # print(state_now)
     # print(state)
     tf = t
-    if done:
+    # if done:
         # obs = env.reset()
     #    tf = t
-        break
+    #    break
 
-
-print(state.shape)
-# time = np.linspace(0, total_step, total_step)
-# Plot Results
 plt.figure()
 plt.subplot(2, 3, 1)
 plt.plot(time[0:tf], state[0:tf, 0:3])
@@ -80,7 +103,7 @@ plt.title("Velocity")
 
 # plt.figure()
 plt.subplot(2, 3, 3)
-plt.plot(time[0:tf], rad2deg(state[0:tf, 6:9]))
+plt.plot(time[0:tf], quat2euler(state[0:tf, 6:10]))
 plt.legend(['rel phi', 'rel theta', 'rel psi'])
 plt.xlabel("Time/s")
 plt.ylabel("Angle/deg")
@@ -88,7 +111,7 @@ plt.title("Attitude")
 
 # plt.figure()
 plt.subplot(2, 3, 4)
-plt.plot(time[0:tf], rad2deg(state[0:tf, 9:]))
+plt.plot(time[0:tf], rad2deg(state[0:tf, 10:]))
 plt.legend(['rel p', 'rel q', 'rel r'])
 plt.xlabel("Time/s")
 plt.ylabel("Angular rate/deg*s^-1")

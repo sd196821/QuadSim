@@ -6,18 +6,22 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 # print(rot2quat(euler2rot(np.array([0, 0, 0]))))
-ini_pos = np.array([0, 0, 0])
+ini_pos = np.array([8, 7.5, 5])
+ini_vel = np.array([0, 0, 0])
 ini_att = euler2quat(np.array([deg2rad(0.0), deg2rad(0.0), deg2rad(0.0)]))
-ini_angular_rate = np.array([0, deg2rad(0), 0])
+ini_angular_rate = np.array([0, 0, 0])
 ini_state = np.zeros(13)
 ini_state[0:3] = ini_pos
+ini_state[3:6] = ini_vel
 ini_state[6:10] = ini_att
 ini_state[10:] = ini_angular_rate
 
-pos_des = np.array([-0.2, 0.2, 0.2])  # [x, y, z]
+pos_des = np.array([8.0, 7.5, 5])  # [x, y, z]
+vel_des = np.array([0, 0, 0])
 att_des = euler2quat(np.array([deg2rad(0.0), deg2rad(0.0), deg2rad(0.0)]))
 state_des = np.zeros(13)
 state_des[0:3] = pos_des
+state_des[3:6] = vel_des
 state_des[6:10] = att_des
 
 # Initial a drone and set its initial state
@@ -31,19 +35,24 @@ u = np.zeros(quad1.dim_u)
 # u[0] = quad1.get_mass() * 9.81
 # u[3] = 0.2
 
-total_step = 2000
+total_step = 1500
 state = np.zeros((total_step, 13))
 state_des_all = np.zeros((total_step, 13))
 rpy = np.zeros((total_step, 3))
 time = np.zeros(total_step)
 u_all = np.zeros((total_step, 4))
 
-
+kp=0.35
+kd = 0
 # Run simulation
 for t in range(total_step):
+    state_last = state[t - 1, :]
     state_now = quad1.get_state()
     # u = control.att_alt_controller(state_des, state_now)
-    u = control.PID(state_des, state_now)
+    des_vel = kp * (np.array([12, 7.5, 5]) - state_now[0:3]) + kd * ( - state_now[3:6])
+    if t != 0:
+        state_des[3:6] = des_vel
+    u = control.vel_controller(state_des, state_now, state_last)
     # u[1:] = control.attitude_controller(state_des, state_now)
     u_all[t, :] = u
     state[t, :] = state_now

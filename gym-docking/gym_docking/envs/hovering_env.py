@@ -37,7 +37,7 @@ class HoveringEnv(gym.Env):
         low = self.drone.state_lim_low
         high = self.drone.state_lim_high
 
-        self.action_space = spaces.Box(low=np.array([0, -10, -10, -10]), high=np.array([10, 10, 10, 10]))
+        self.action_space = spaces.Box(low=np.array([-1.0, -1.0, -1.0, -1.0]), high=np.array([1.0, 1.0, 1.0, 1.0]))
         self.observation_space = spaces.Box(low=low, high=high)
 
         self.seed()

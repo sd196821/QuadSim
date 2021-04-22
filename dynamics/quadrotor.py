@@ -43,7 +43,6 @@ class Drone():
         self.km = 1.5e-9
         self.motor_lambda = self.km / self.kf
 
-
         self.A = np.array([[0.25, 0, -0.5/self.arm_length],
                            [0.25, 0.5/self.arm_length, 0],
                            [0.25, 0, 0.5/self.arm_length],

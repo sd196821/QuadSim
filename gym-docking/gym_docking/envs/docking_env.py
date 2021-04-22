@@ -85,7 +85,7 @@ class DockingEnv(gym.Env):
 
     def step(self, action):
         reward = 0.0
-        action_chaser = self.chaser.rotor2control @ (self.action_mean * action + self.action_std)
+        action_chaser = self.chaser.rotor2control @ (self.action_std * action + self.action_mean)
 
         # action_target = action[4:]
         action_target = self.target_controller.PID(self.target_state_des, self.state_target)
@@ -103,37 +103,38 @@ class DockingEnv(gym.Env):
         # att_vel_error = self.state_des[10:] - self.state[10:]
 
         self.rel_state = state2rel(self.state_chaser, self.state_target, chaser_dp, target_dp)
-        done_final = False
-        done_overlimit = False
-        done_final = bool((np.linalg.norm(self.rel_state[0:3], 2) < 0.001)
+        # done_final = False
+        # done_overlimit = False
+        done_final = bool((np.linalg.norm(self.rel_state[0:3], 2) < 0.005)
                           and (np.linalg.norm(self.rel_state[3:6], 2) < 0.01)
                           and (np.abs(self.rel_state[6]) < (deg2rad(10.0)))
                           and (np.abs(self.rel_state[7]) < (deg2rad(10.0)))
                           # and (deg2rad(95.0) > np.abs(self.rel_state[8]) > deg2rad(85.0)))
-                          and (np.abs(self.rel_state[8]) < deg2rad(5.0)))
+                          and (np.abs(self.rel_state[8]) < deg2rad(10.0)))
         done_overlimit = bool(np.linalg.norm(self.rel_state[0:3], 2) > 10)
 
         done = bool(done_final or done_overlimit)
 
         if done_final:
-            reward_docked = 0.5
+            reward_docked = 10
         else:
             reward_docked = 0
 
-        reward_action = -0.002 * np.linalg.norm(action[:], 2)
+        reward_action = 0.001 * np.linalg.norm(action[:], 2)
 
         # tbc
         if done_overlimit:
-            reward = - 0.2
+            reward = -0.1
         elif done_final:
             reward = reward_docked
         else:
-            reward = -0.002*np.linalg.norm(self.rel_state[0:3], 2) \
-                     - 0.0002*np.linalg.norm(self.rel_state[3:6], 2) \
-                     - 0.002*np.linalg.norm(self.rel_state[6:9], 2) \
+            reward = -0.001*np.linalg.norm(self.rel_state[0:3], 2) \
+                     - 0.00001*np.linalg.norm(self.rel_state[3:6], 2) \
+                     - 0.001*np.linalg.norm(self.rel_state[6:9], 2) \
+                     - 0.001 \
                      + reward_action
 
-        reward -= 0.01
+        # reward -= 0.001
         info = {'chaser': self.state_chaser,
                 'target': self.state_target,
                 'done_final': done_final,

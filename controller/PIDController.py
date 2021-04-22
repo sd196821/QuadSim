@@ -25,6 +25,12 @@ class controller():
         self.kd_y = -1.65  # 1.87 0.9
         self.kd_z = 8  # 18  # 6;
 
+        self.kp_vx = -0.7  # 1.87 # 0.9 # 0.4;0.6(12.5s) 0.7();0.9(10)
+        self.kp_vy = -0.7  # 1.87 0.9
+
+        self.kd_vx = 0.0 # 1.87 # 0.9 # 0.4;0.6(12.5s) 0.7();0.9(10)
+        self.kd_vy = 0.0  # 1.87 0.9
+
         self.kp_vz = 1
         self.kd_vz = 0.1
 
@@ -67,7 +73,7 @@ class controller():
         # print(M)
         return M
 
-    def pos_controller(self, state_des, state_now):
+    def hover_controller(self, state_des, state_now):
         acc_des = np.zeros(3)
         e_pos = state_des[0:3] - state_now[0:3]
         e_vel = state_des[3:6] - state_now[3:6]
@@ -97,13 +103,88 @@ class controller():
 
         return F, state_des
 
+    def vel_controller(self, state_des, state_now, state_last):
+        acc_des = np.zeros(3)
+        # e_pos = state_des[0:3] - state_now[0:3]
+        e_vel = state_des[3:6] - state_now[3:6]
+        e_dv = state_now[3:6] - state_last[3:6]
+
+        acc_des[0] = self.kp_vx * e_vel[0] + self.kd_vx * e_dv[0]
+        acc_des[1] = self.kp_vy * e_vel[1] + self.kd_vy * e_dv[1]
+        acc_des[2] = self.kp_vz * e_vel[2] + self.kd_vz * e_dv[2]
+
+        F = self.mass * self.g + self.mass * acc_des[2]
+
+        # att_des =rot2euler(quat2rot(state_des[6:10]))
+        att_des = quat2euler(state_des[6:10])
+        psi_des = att_des[2]
+
+        phi_des = (acc_des[0] * np.sin(psi_des) - acc_des[1] * np.cos(psi_des)) / self.g
+        theta_des = (acc_des[0] * np.cos(psi_des) + acc_des[1] * np.sin(psi_des)) / self.g
+
+        roll_rate_des = 0
+        pitch_rate_des = 0
+
+        att_des[0] = phi_des
+        att_des[1] = theta_des
+        att_des[2] = psi_des
+
+        state_des[6:10] = euler2quat(att_des)
+        state_des[10] = roll_rate_des
+        state_des[11] = pitch_rate_des
+
+        M = self.attitude_controller(state_des, state_now)
+        output = np.zeros(4)
+        output[0] = F
+        output[1:] = M
+
+        return output
+
+    def pos_vel_controller(self, state_des, state_now, state_last):
+        acc_des = np.zeros(3)
+        e_pos = state_des[0:3] - state_now[0:3]
+
+        e_vel = state_des[3:6] - state_now[3:6]
+        e_dv = state_now[3:6] - state_last[3:6]
+
+        acc_des[0] = self.kp_vx * e_vel[0] + self.kd_vx * e_dv[0]
+        acc_des[1] = self.kp_vy * e_vel[1] + self.kd_vy * e_dv[1]
+        acc_des[2] = self.kp_vz * e_vel[2] + self.kd_vz * e_dv[2]
+
+        F = self.mass * self.g + self.mass * acc_des[2]
+
+        # att_des =rot2euler(quat2rot(state_des[6:10]))
+        att_des = quat2euler(state_des[6:10])
+        psi_des = att_des[2]
+
+        phi_des = (acc_des[0] * np.sin(psi_des) - acc_des[1] * np.cos(psi_des)) / self.g
+        theta_des = (acc_des[0] * np.cos(psi_des) + acc_des[1] * np.sin(psi_des)) / self.g
+
+        roll_rate_des = 0
+        pitch_rate_des = 0
+
+        att_des[0] = phi_des
+        att_des[1] = theta_des
+        att_des[2] = psi_des
+
+        state_des[6:10] = euler2quat(att_des)
+        state_des[10] = roll_rate_des
+        state_des[11] = pitch_rate_des
+
+        M = self.attitude_controller(state_des, state_now)
+        output = np.zeros(4)
+        output[0] = F
+        output[1:] = M
+
     def PID(self, state_des, state_now):
-        F, state_des_c = self.pos_controller(state_des, state_now)
+        F, state_des_c = self.hover_controller(state_des, state_now)
         M = self.attitude_controller(state_des_c, state_now)
         output = np.zeros(4)
         output[0] = F
         output[1:] = M
         return output
+
+
 
     def rc_controller(self, state_des, state_now, state_last):
         # acc_des = np.zeros(3)
