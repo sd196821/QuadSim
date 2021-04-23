@@ -67,10 +67,9 @@ class DockingEnv(gym.Env):
         target_high = self.target.state_lim_high
 
         # obs rel info: 12x1 [rel_pos, rel_vel, rel_rpy, rel_rpy_rate]
-        obs_low = np.array([-20, -100, 0, -10, -10, -10, -np.pi, -np.pi / 2, -np.pi, -10 * 2 * np.pi, -10 * 2 * np.pi,
+        obs_low = np.array([-20, -20, -20, -10, -10, -10, -np.pi, -np.pi / 2, -np.pi, -10 * 2 * np.pi, -10 * 2 * np.pi,
                             -10 * 2 * np.pi])
-        obs_high = np.array(
-            [20, 0, 100, 10, 10, 10, np.pi, np.pi / 2, np.pi, 10 * 2 * np.pi, 10 * 2 * np.pi, 10 * 2 * np.pi])
+        obs_high = np.array([20, 20, 20, 10, 10, 10, np.pi, np.pi / 2, np.pi, 10 * 2 * np.pi, 10 * 2 * np.pi, 10 * 2 * np.pi])
 
         # rel_low = np.array([60, 0, 100, 10, 10, 10, 1, 1, 1, 1, 10 * 2 * np.pi, 10 * 2 * np.pi, 10 * 2 * np.pi])
 
@@ -120,7 +119,7 @@ class DockingEnv(gym.Env):
         else:
             reward_docked = 0
 
-        reward_action = 0.001 * np.linalg.norm(action[:], 2)
+        reward_action = -0.001 * np.linalg.norm(action[:], 2)
 
         # tbc
         if done_overlimit:
@@ -128,8 +127,8 @@ class DockingEnv(gym.Env):
         elif done_final:
             reward = reward_docked
         else:
-            reward = -0.001*np.linalg.norm(self.rel_state[0:3], 2) \
-                     - 0.00001*np.linalg.norm(self.rel_state[3:6], 2) \
+            reward = - 0.001*np.linalg.norm(self.rel_state[0:3], 2) \
+                     - 0.0001*np.linalg.norm(self.rel_state[3:6], 2) \
                      - 0.001*np.linalg.norm(self.rel_state[6:9], 2) \
                      - 0.001 \
                      + reward_action
