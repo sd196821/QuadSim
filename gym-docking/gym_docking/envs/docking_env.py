@@ -104,22 +104,26 @@ class DockingEnv(gym.Env):
         self.rel_state = state2rel(self.state_chaser, self.state_target, chaser_dp, target_dp)
         # done_final = False
         # done_overlimit = False
-        done_final = bool((np.linalg.norm(self.rel_state[0:3], 2) < 0.005)
+        done_final = bool((np.linalg.norm(self.rel_state[0:3], 2) < 0.02)
                           and (np.linalg.norm(self.rel_state[3:6], 2) < 0.01)
                           and (np.abs(self.rel_state[6]) < (deg2rad(10.0)))
                           and (np.abs(self.rel_state[7]) < (deg2rad(10.0)))
                           # and (deg2rad(95.0) > np.abs(self.rel_state[8]) > deg2rad(85.0)))
                           and (np.abs(self.rel_state[8]) < deg2rad(10.0)))
-        done_overlimit = bool(np.linalg.norm(self.rel_state[0:3], 2) > 10)
+        done_overlimit = bool(np.linalg.norm(self.rel_state[0:3], 2) > 10
+                              or np.linalg.norm(self.rel_state[3:6], 2) > 10)
 
-        done = bool(done_final or done_overlimit)
+        done = done_overlimit
 
         if done_final:
-            reward_docked = 10
+            reward_docked = + (0.02-np.linalg.norm(self.rel_state[0:3], 2)) \
+                            + (0.01-np.linalg.norm(self.rel_state[3:6], 2)) \
+                            + 0.1*(deg2rad(20.0) - np.linalg.norm(self.rel_state[6:9])) \
+                            + 0.01
         else:
             reward_docked = 0
 
-        reward_action = -0.001 * np.linalg.norm(action[:], 2)
+        reward_action = -0.0001 * np.linalg.norm(action[:], 2)
 
         # tbc
         if done_overlimit:

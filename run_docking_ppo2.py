@@ -25,7 +25,7 @@ def make_env(env_id, rank, seed=0):
     def _init():
         env = gym.make(env_id)
         # env = VecNormalize(env, norm_obs=True, norm_reward=True,
-        #           clip_obs=10.)
+        #            clip_obs=10.)
         env.seed(seed + rank)
         return env
     set_global_seeds(seed)
@@ -41,10 +41,9 @@ if __name__ == '__main__':
     # which does exactly the previous steps for you:
     # env = make_vec_env(env_id, n_envs=num_cpu, seed=0)
 
-    # model = ACKTR(MlpPolicy, env, verbose=1)
 
     checkpoint_callback = CheckpointCallback(save_freq=int(1e5), save_path='./logs/',
-                                             name_prefix='rl_model_10para_10M')
+                                             name_prefix='rl_model_307_10M')
 
     model = PPO2(policy='MlpPolicy', env=env, verbose=1,
                  tensorboard_log="./ppo2_docking_tensorboard/",
@@ -53,9 +52,9 @@ if __name__ == '__main__':
                  lam=0.95,
                  gamma=0.99,  # lower 0.9 ~ 0.99
                  # n_steps=math.floor(cfg['env']['max_time'] / cfg['env']['ctl_dt']),
-                 n_steps=1000,
+                 n_steps=500,
                  ent_coef=0.00,
-                 learning_rate=5e-5,
+                 learning_rate=3e-4,
                  vf_coef=0.5,
                  max_grad_norm=0.5,
                  nminibatches=1,
@@ -63,11 +62,11 @@ if __name__ == '__main__':
                  cliprange=0.2)
 
     # load trained model
-    # model = PPO2.load("./ppo2_docking_100para_10M.zip", env=env, tensorboard_log="./ppo2_docking_tensorboard/")
+    # model = PPO2.load("./ppo2_docking.zip", env=env, tensorboard_log="./ppo2_docking_tensorboard/")
 
     model.learn(total_timesteps=int(10e6), callback=checkpoint_callback)
-    model.save("ppo2_docking_10para_10M")
-    #env.save("vec_normalize.pkl")
+    model.save("ppo2_docking_307_10M")
+    # env.save("vec_normalize.pkl")
 
 
 # model.learn(total_timesteps=250000)
