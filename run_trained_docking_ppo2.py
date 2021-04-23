@@ -21,7 +21,7 @@ def info2array(info,tf):
 
 #env = DummyVecEnv([lambda: gym.make("gym_docking:docking-v0")])
 env =  gym.make('gym_docking:docking-v0')
-model = PPO2.load('./logs/rl_model_newer_10M_2000000_steps.zip')
+model = PPO2.load('./logs/rl_model_vecenv_10M_3300000_steps.zip')
 
 total_step = 1000
 state = np.zeros((total_step, 12))
@@ -34,7 +34,7 @@ info_lst = []
 
 obs = env.reset()
 for t in range(total_step):
-    action, states = model.predict(obs, deterministic=True)
+    action, states = model.predict(obs, deterministic=False)
     obs, reward, done, info = env.step(action)
 
     state_now = obs.flatten()
