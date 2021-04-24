@@ -25,23 +25,27 @@ class DockingEnv(gym.Env):
         # self.steps_beyond_done = None
 
         # Chaser Initial State
-        chaser_ini_pos = np.array([8, -50, 5]) + np.random.uniform(-0.1, 0.1, (3,))
-        chaser_ini_att = euler2quat(np.array([deg2rad(0), deg2rad(0), 0]))
-        chaser_ini_angular_rate = np.array([0, deg2rad(0), 0])
+        chaser_ini_pos = np.array([8, -50, 5]) + np.random.uniform(-1, 1, (3,))
+        chaser_ini_vel = np.array([0, 0, 0]) + np.random.uniform(-0.1, 0.1, (3,))
+        chaser_ini_att = euler2quat(np.array([0.0, 0.0, 0.0]) + np.random.uniform(-0.2, 0.2, (3,)))
+        chaser_ini_angular_rate = np.array([0.0, 0.0, 0.0]) + np.random.uniform(-0.1, 0.1, (3,))
         chaser_dock_port = np.array([0.1, 0, 0])
         self.chaser_ini_state = np.zeros(13)
         self.chaser_ini_state[0:3] = chaser_ini_pos
+        self.chaser_ini_state[3:6] = chaser_ini_vel
         self.chaser_ini_state[6:10] = chaser_ini_att
         self.chaser_ini_state[10:] = chaser_ini_angular_rate
         self.chaser.reset(self.chaser_ini_state, chaser_dock_port)
 
         # Target Initial State
         target_ini_pos = np.array([10, -50, 5])
+        target_ini_vel = np.array([0.0, 0.0, 0.0])
         target_ini_att = euler2quat(np.array([deg2rad(0), deg2rad(0), 0]))
         target_ini_angular_rate = np.array([0, deg2rad(0), 0])
         target_dock_port = np.array([-0.1, 0, 0])
         self.target_ini_state = np.zeros(13)
         self.target_ini_state[0:3] = target_ini_pos
+        self.target_ini_state[3:6] = target_ini_vel
         self.target_ini_state[6:10] = target_ini_att
         self.target_ini_state[10:] = target_ini_angular_rate
         self.target.reset(self.target_ini_state, target_dock_port)
@@ -67,9 +71,8 @@ class DockingEnv(gym.Env):
         target_high = self.target.state_lim_high
 
         # obs rel info: 12x1 [rel_pos, rel_vel, rel_rpy, rel_rpy_rate]
-        obs_low = np.array([-20, -20, -20, -10, -10, -10, -np.pi, -np.pi / 2, -np.pi, -10 * 2 * np.pi, -10 * 2 * np.pi,
-                            -10 * 2 * np.pi])
-        obs_high = np.array([20, 20, 20, 10, 10, 10, np.pi, np.pi / 2, np.pi, 10 * 2 * np.pi, 10 * 2 * np.pi, 10 * 2 * np.pi])
+        obs_low = np.array([-20, -20, -20, -10, -10, -10, -np.pi, -np.pi / 2, -np.pi, -10 * np.pi, -10 * np.pi, -10 * np.pi])
+        obs_high = np.array([20, 20, 20, 10, 10, 10, np.pi, np.pi / 2, np.pi, 10 * np.pi, 10 * np.pi, 10 * np.pi])
 
         # rel_low = np.array([60, 0, 100, 10, 10, 10, 1, 1, 1, 1, 10 * 2 * np.pi, 10 * 2 * np.pi, 10 * 2 * np.pi])
 
@@ -77,7 +80,7 @@ class DockingEnv(gym.Env):
         self.observation_space = spaces.Box(low=obs_low, high=obs_high)
 
         self.action_mean = np.array([1.0, 1.0, 1.0, 1.0]) * self.chaser.mass * self.chaser.gravity / 4.0
-        self.action_std = np.array([1.0, 1.0, 1.0, 1.0]) * self.chaser.mass * self.chaser.gravity
+        self.action_std = np.array([1.0, 1.0, 1.0, 1.0]) * self.chaser.mass * self.chaser.gravity / 2
 
         self.seed()
         # self.reset()
@@ -106,42 +109,48 @@ class DockingEnv(gym.Env):
         # done_overlimit = False
         done_final = bool((np.linalg.norm(self.rel_state[0:3], 2) < 0.02)
                           and (np.linalg.norm(self.rel_state[3:6], 2) < 0.01)
-                          and (np.abs(self.rel_state[6]) < (deg2rad(10.0)))
-                          and (np.abs(self.rel_state[7]) < (deg2rad(10.0)))
-                          # and (deg2rad(95.0) > np.abs(self.rel_state[8]) > deg2rad(85.0)))
-                          and (np.abs(self.rel_state[8]) < deg2rad(10.0)))
-        done_overlimit = bool(np.linalg.norm(self.rel_state[0:3], 2) > 10
-                              or np.linalg.norm(self.rel_state[3:6], 2) > 10)
+                          and (np.linalg.norm(self.rel_state[6:9], 2) < deg2rad(20)))
+        # and (np.linalg.norm(self.rel_state[9:], 2) < deg2rad(10))
+        # and (np.abs(self.rel_state[6]) < (deg2rad(10.0)))
+        # and (np.abs(self.rel_state[7]) < (deg2rad(10.0)))
+        # # and (deg2rad(95.0) > np.abs(self.rel_state[8]) > deg2rad(85.0)))
+        # and (np.abs(self.rel_state[8]) < deg2rad(10.0)))\
+
+        done_overlimit = bool((np.linalg.norm(self.rel_state[0:3], 2) > 10)
+                              or (np.linalg.norm(self.rel_state[3:6], 2) > 10))
+        # or np.linalg.norm(self.rel_state[9:], 2) > 5 * np.pi)
 
         done = done_overlimit
 
         if done_final:
-            reward_docked = + (0.02-np.linalg.norm(self.rel_state[0:3], 2)) \
-                            + (0.01-np.linalg.norm(self.rel_state[3:6], 2)) \
-                            + 0.1*(deg2rad(20.0) - np.linalg.norm(self.rel_state[6:9])) \
-                            + 0.01
+            reward_docked = +1
+            # + (0.02-np.linalg.norm(self.rel_state[0:3], 2)) \
+            # + (0.01-np.linalg.norm(self.rel_state[3:6], 2)) \
+            # + 0.1*(deg2rad(20.0) - np.linalg.norm(self.rel_state[6:9])) \
         else:
             reward_docked = 0
 
         reward_action = -0.0001 * np.linalg.norm(action[:], 2)
 
-        # tbc
-        if done_overlimit:
-            reward = -0.1
-        elif done_final:
-            reward = reward_docked
-        else:
-            reward = - 0.001*np.linalg.norm(self.rel_state[0:3], 2) \
-                     - 0.0001*np.linalg.norm(self.rel_state[3:6], 2) \
-                     - 0.001*np.linalg.norm(self.rel_state[6:9], 2) \
-                     - 0.001 \
-                     + reward_action
-
-        # reward -= 0.001
         info = {'chaser': self.state_chaser,
                 'target': self.state_target,
                 'done_final': done_final,
                 'done_overlimit': done_overlimit}
+        # tbc
+        if done_overlimit:
+            reward = -0.1
+        elif not done_final:
+            reward = - 0.001 * np.linalg.norm(self.rel_state[0:3], 2) \
+                     - 0.0001 * np.linalg.norm(self.rel_state[3:6], 2) \
+                     - 0.001 * np.linalg.norm(self.rel_state[6:9], 2) \
+                     - 0.0001 * np.linalg.norm(self.rel_state[9:], 2) \
+                     + 0.001 \
+                     + reward_action
+        else:
+            reward = reward_docked
+
+        # reward -= 0.001
+
         return self.rel_state, reward, done, info
 
     def reset(self):

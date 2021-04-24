@@ -10,7 +10,7 @@ import tensorflow as tf
 
 
 # env = DummyVecEnv([lambda: gym.make("gym_docking:docking-v0")])
-# env = gym.make('gym_docking:docking-v0')
+env = gym.make('gym_docking:docking-v0')
 
 
 def make_env(env_id, rank, seed=0):
@@ -33,17 +33,17 @@ def make_env(env_id, rank, seed=0):
 
 if __name__ == '__main__':
     env_id = 'gym_docking:docking-v0'
-    num_cpu = 11  # Number of processes to use
+    num_cpu = 30  # Number of processes to use
     # Create the vectorized environment
     env = SubprocVecEnv([make_env(env_id, i) for i in range(num_cpu)])
 
     # Stable Baselines provides you with make_vec_env() helper
     # which does exactly the previous steps for you:
-    # env = make_vec_env(env_id, n_envs=num_cpu, seed=0)
+    # env = make_vec_env(env, n_envs=num_cpu, seed=0)
 
 
     checkpoint_callback = CheckpointCallback(save_freq=int(1e5), save_path='./logs/',
-                                             name_prefix='rl_model_307_10M')
+                                             name_prefix='rl_model_621_nn_10M')
 
     model = PPO2(policy='MlpPolicy', env=env, verbose=1,
                  tensorboard_log="./ppo2_docking_tensorboard/",
@@ -54,18 +54,18 @@ if __name__ == '__main__':
                  # n_steps=math.floor(cfg['env']['max_time'] / cfg['env']['ctl_dt']),
                  n_steps=500,
                  ent_coef=0.00,
-                 learning_rate=3e-4,
+                 learning_rate=6e-4,
                  vf_coef=0.5,
                  max_grad_norm=0.5,
-                 nminibatches=1,
+                 nminibatches=10,
                  noptepochs=10,
                  cliprange=0.2)
 
     # load trained model
-    # model = PPO2.load("./ppo2_docking.zip", env=env, tensorboard_log="./ppo2_docking_tensorboard/")
+    # model = PPO2.load("./ppo2_docking_621_10M.zip", env=env, tensorboard_log="./ppo2_docking_tensorboard/")
 
     model.learn(total_timesteps=int(10e6), callback=checkpoint_callback)
-    model.save("ppo2_docking_307_10M")
+    model.save("ppo2_docking_621_nn_10M")
     # env.save("vec_normalize.pkl")
 
 

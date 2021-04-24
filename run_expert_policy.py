@@ -35,7 +35,7 @@ u_all = np.zeros((total_step, 4))
 done = False
 tf = 0
 info_lst = []
-
+rewards = []
 obs = env.reset()
 
 control = controller(env.chaser.get_arm_length(), env.chaser.get_mass())
@@ -59,10 +59,11 @@ for t in range(total_step):
     # rel_state[t, 10:] = obss[9:]
     # state_now = rel_state[t, :]
     des_vel = kp * (env.state_target[0:3] - env.state_chaser[0:3]) + kd * ( - env.state_chaser[3:6])
-    state_des[3:6] = des_vel
-    u = control.vel_controller(state_des, state_now, state_laskt)
-    action = control.vel_controller(env.state_target, env.state_chaser)
+    if t != 0:
+        state_des[3:6] = des_vel
+    action = control.vel_controller(state_des, env.state_chaser, state_last)
     obs, reward, done, info = env.step(action)
+
 
     # state_now = obs.flatten()
     # print('u: ', action)
@@ -73,6 +74,7 @@ for t in range(total_step):
 
     time[t] = t
     info_lst.append(info)
+    rewards.append(reward)
     # print('obs:', obs)
     # print('vel:', state_now[3:6])
     # print('euler:', state_now[6:9])
@@ -80,11 +82,11 @@ for t in range(total_step):
     # print(state_now)
     # print(state)
     tf = t
-    # if done:
+    #if done:
         # obs = env.reset()
     #    tf = t
     #    break
-
+print('Total Rewards: ', np.sum(rewards))
 plt.figure()
 plt.subplot(2, 3, 1)
 plt.plot(time[0:tf], state[0:tf, 0:3])
@@ -102,12 +104,12 @@ plt.ylabel("Velocity/m*s^-1")
 plt.title("Velocity")
 
 # plt.figure()
-plt.subplot(2, 3, 3)
-plt.plot(time[0:tf], quat2euler(state[0:tf, 6:10]))
-plt.legend(['rel phi', 'rel theta', 'rel psi'])
-plt.xlabel("Time/s")
-plt.ylabel("Angle/deg")
-plt.title("Attitude")
+# plt.subplot(2, 3, 3)
+# plt.plot(time[0:tf], quat2euler(state[0:tf, 6:10]))
+# plt.legend(['rel phi', 'rel theta', 'rel psi'])
+# plt.xlabel("Time/s")
+# plt.ylabel("Angle/deg")
+# plt.title("Attitude")
 
 # plt.figure()
 plt.subplot(2, 3, 4)
