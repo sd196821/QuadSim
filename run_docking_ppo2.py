@@ -42,8 +42,8 @@ if __name__ == '__main__':
     # env = make_vec_env(env, n_envs=num_cpu, seed=0)
 
 
-    checkpoint_callback = CheckpointCallback(save_freq=int(1e5), save_path='./logs/',
-                                             name_prefix='rl_model_621_a_10M')
+    checkpoint_callback = CheckpointCallback(save_freq=int(5e4), save_path='./logs/',
+                                             name_prefix='rl_model_621_b_10M')
 
     model = PPO2(policy='MlpPolicy', env=env, verbose=1,
                  tensorboard_log="./ppo2_docking_tensorboard/",
@@ -65,7 +65,7 @@ if __name__ == '__main__':
     # model = PPO2.load("./ppo2_docking_621_10M.zip", env=env, tensorboard_log="./ppo2_docking_tensorboard/")
 
     model.learn(total_timesteps=int(10e6), callback=checkpoint_callback)
-    model.save("ppo2_docking_621_a_10M")
+    model.save("ppo2_docking_621_b_10M")
     # env.save("vec_normalize.pkl")
 
 

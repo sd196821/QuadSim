@@ -140,12 +140,16 @@ class DockingEnv(gym.Env):
         if done_overlimit:
             reward = -1.0
         elif not done_final:
-            reward = - 0.1 * np.linalg.norm(self.rel_state[0:3], 2) \
-                     - 0.001 * np.linalg.norm(self.rel_state[3:6], 2) \
-                     - 0.01 * np.linalg.norm(self.rel_state[6:9], 2) \
-                     - 0.001 * np.linalg.norm(self.rel_state[9:], 2) \
-                     # + 0.001 \
-                     # + reward_action
+            # reward = - 0.1 * np.linalg.norm(self.rel_state[0:3], 2) \
+            #          - 0.001 * np.linalg.norm(self.rel_state[3:6], 2) \
+            #          - 0.01 * np.linalg.norm(self.rel_state[6:9], 2) \
+            #          - 0.001 * np.linalg.norm(self.rel_state[9:], 2) \
+            # + 0.001 \
+            # + reward_action
+            reward = - 0.01 * np.abs(self.rel_state[0]) - 0.01 * np.abs(self.rel_state[1]) - 0.01 * np.abs(self.rel_state[2]) \
+                     - 0.01 * np.abs(self.rel_state[6]) - 0.01 * np.abs(self.rel_state[7]) - 0.01 * np.abs(self.rel_state[8])
+                     # - 0.001 * np.linalg.norm(self.rel_state[9:], 2)
+        # - 0.001 * np.abs(self.rel_state[3]) - 0.001 * np.abs(self.rel_state[4]) - 0.001 * np.abs(self.rel_state[5]) \
         elif done_final:
             reward = reward_docked
         else:
