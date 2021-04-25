@@ -33,7 +33,8 @@ class Drone():
         self.u = np.zeros(shape=self.dim_u)
 
         self.state_lim_low = np.array(
-            [-100, -100, 0, -100, -100, -100, -100, -100, -100, -100, -10 * 2 * np.pi, -10 * 2 * np.pi, -10 * 2 * np.pi])
+            [-100, -100, 0, -100, -100, -100, -100, -100, -100, -100, -10 * 2 * np.pi, -10 * 2 * np.pi,
+             -10 * 2 * np.pi])
         self.state_lim_high = np.array(
             [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 10 * 2 * np.pi, 10 * 2 * np.pi, 10 * 2 * np.pi])
 
@@ -43,19 +44,19 @@ class Drone():
         self.km = 1.5e-9
         self.motor_lambda = self.km / self.kf
 
-        self.A = np.array([[0.25, 0, -0.5/self.arm_length],
-                           [0.25, 0.5/self.arm_length, 0],
-                           [0.25, 0, 0.5/self.arm_length],
-                           [0.25, -0.5/self.arm_length, 0]])
+        self.A = np.array([[0.25, 0, -0.5 / self.arm_length],
+                           [0.25, 0.5 / self.arm_length, 0],
+                           [0.25, 0, 0.5 / self.arm_length],
+                           [0.25, -0.5 / self.arm_length, 0]])
 
         self.B = np.array([[1, 1, 1, 1],
                            [0, self.arm_length, 0, -self.arm_length],
                            [-self.arm_length, 0, self.arm_length, 0]])
 
         self.rotor2control = np.array([[1, 1, 1, 1],
-                           [0, self.arm_length, 0, -self.arm_length],
-                           [-self.arm_length, 0, self.arm_length, 0],
-                           [self.motor_lambda, -self.motor_lambda, self.motor_lambda, -self.motor_lambda]])
+                                       [0, self.arm_length, 0, -self.arm_length],
+                                       [-self.arm_length, 0, self.arm_length, 0],
+                                       [self.motor_lambda, -self.motor_lambda, self.motor_lambda, -self.motor_lambda]])
 
         # self.dock_port_inB = None
         self.dock_port_inB_pos = np.array([0.05, 0, 0])
@@ -180,11 +181,11 @@ class Drone():
         return self.mass
 
     def get_dock_port_state(self):
-        dock_port = {'pos':np.zeros(3), 'vel':np.zeros(3), 'quat':np.zeros(4), 'angular_rate':np.zeros(3)}
+        dock_port = {'pos': np.zeros(3), 'vel': np.zeros(3), 'quat': np.zeros(4), 'angular_rate': np.zeros(3)}
         R_w2b = self.quat2rot(self.state[6:10])
         R_b2w = R_w2b.transpose()
         dock_port['pos'] = self.state[0:3] + R_b2w @ self.dock_port_inB_pos
-        dock_port['quat']  = self.rot2quat(self.dock_port_inB_att @ R_w2b)
+        dock_port['quat'] = self.rot2quat(self.dock_port_inB_att @ R_w2b)
         w_sk = np.array([[0, -self.state[12], self.state[11]],
                          [self.state[12], 0, -self.state[10]],
                          [-self.state[11], self.state[10], 0]])

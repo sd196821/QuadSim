@@ -80,14 +80,14 @@ class DockingEnv(gym.Env):
         self.observation_space = spaces.Box(low=obs_low, high=obs_high)
 
         self.action_mean = np.array([1.0, 1.0, 1.0, 1.0]) * self.chaser.mass * self.chaser.gravity / 4.0
-        self.action_std = np.array([1.0, 1.0, 1.0, 1.0]) * self.chaser.mass * self.chaser.gravity / 2
+        self.action_std = np.array([1.0, 1.0, 1.0, 1.0]) * self.chaser.mass * self.chaser.gravity / 2.0
 
         self.seed()
         # self.reset()
 
     def step(self, action):
         reward = 0.0
-        action_chaser = self.chaser.rotor2control @ (self.action_std * action + self.action_mean)
+        action_chaser = self.chaser.rotor2control @ (self.action_std * action[:] + self.action_mean)
 
         # action_target = action[4:]
         action_target = self.target_controller.PID(self.target_state_des, self.state_target)
@@ -108,7 +108,7 @@ class DockingEnv(gym.Env):
         # done_final = False
         # done_overlimit = False
         done_final = bool((np.linalg.norm(self.rel_state[0:3], 2) < 0.02)
-                          and (np.linalg.norm(self.rel_state[3:6], 2) < 0.01)
+                          and (np.linalg.norm(self.rel_state[3:6], 2) < 0.1)
                           and (np.linalg.norm(self.rel_state[6:9], 2) < deg2rad(20)))
         # and (np.linalg.norm(self.rel_state[9:], 2) < deg2rad(10))
         # and (np.abs(self.rel_state[6]) < (deg2rad(10.0)))
@@ -122,15 +122,15 @@ class DockingEnv(gym.Env):
 
         done = done_overlimit
 
+        reward_docked = 0
         if done_final:
-            reward_docked = +1
+            reward_docked = 10.0
             # + (0.02-np.linalg.norm(self.rel_state[0:3], 2)) \
             # + (0.01-np.linalg.norm(self.rel_state[3:6], 2)) \
             # + 0.1*(deg2rad(20.0) - np.linalg.norm(self.rel_state[6:9])) \
-        else:
-            reward_docked = 0
 
-        reward_action = -0.0001 * np.linalg.norm(action[:], 2)
+        reward_action = 0.0
+        # reward_action = -0.0001 * np.linalg.norm(action[:], 2)
 
         info = {'chaser': self.state_chaser,
                 'target': self.state_target,
@@ -138,16 +138,18 @@ class DockingEnv(gym.Env):
                 'done_overlimit': done_overlimit}
         # tbc
         if done_overlimit:
-            reward = -0.1
+            reward = -1.0
         elif not done_final:
-            reward = - 0.001 * np.linalg.norm(self.rel_state[0:3], 2) \
-                     - 0.0001 * np.linalg.norm(self.rel_state[3:6], 2) \
-                     - 0.001 * np.linalg.norm(self.rel_state[6:9], 2) \
-                     - 0.0001 * np.linalg.norm(self.rel_state[9:], 2) \
-                     + 0.001 \
-                     + reward_action
-        else:
+            reward = - 0.1 * np.linalg.norm(self.rel_state[0:3], 2) \
+                     - 0.001 * np.linalg.norm(self.rel_state[3:6], 2) \
+                     - 0.01 * np.linalg.norm(self.rel_state[6:9], 2) \
+                     - 0.001 * np.linalg.norm(self.rel_state[9:], 2) \
+                     # + 0.001 \
+                     # + reward_action
+        elif done_final:
             reward = reward_docked
+        else:
+            reward = 0.0
 
         # reward -= 0.001
 
