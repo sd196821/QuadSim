@@ -25,7 +25,7 @@ def info2array(info,tf):
 #env = DummyVecEnv([lambda: gym.make("gym_docking:docking-v0")])
 env =  gym.make('gym_docking:docking-v0')
 
-total_step = 1000
+total_step = 1500
 rel_state = np.zeros((total_step, 12))
 state = np.zeros((total_step, 12))
 rpy = np.zeros((total_step, 3))
@@ -43,7 +43,7 @@ print(env.chaser.get_arm_length())
 
 state_des = env.chaser_ini_state
 
-kp=0.35
+kp= 0.35
 kd = 0
 
 for t in range(total_step):
@@ -58,12 +58,12 @@ for t in range(total_step):
     # rel_state[t, 6:10] = euler2quat(obss[6:9])
     # rel_state[t, 10:] = obss[9:]
     # state_now = rel_state[t, :]
-    des_vel = kp * (env.state_target[0:3] - env.state_chaser[0:3]) + kd * ( - env.state_chaser[3:6])
+    des_vel = kp * (env.state_target[0:3] + np.array([-0.2,0,0]) - env.state_chaser[0:3]) + kd * ( - env.state_chaser[3:6])
     if t != 0:
         state_des[3:6] = des_vel
     action = control.vel_controller(state_des, env.state_chaser, state_last)
-    obs, reward, done, info = env.step(action)
-
+    u = np.linalg.inv(env.chaser.rotor2control) @ action / env.action_max
+    obs, reward, done, info = env.step(u)
 
     # state_now = obs.flatten()
     # print('u: ', action)
@@ -82,10 +82,11 @@ for t in range(total_step):
     # print(state_now)
     # print(state)
     tf = t
-    #if done:
+    if done:
         # obs = env.reset()
     #    tf = t
-    #    break
+        break
+
 print('Total Rewards: ', np.sum(rewards))
 plt.figure()
 plt.subplot(2, 3, 1)

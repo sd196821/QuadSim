@@ -1,6 +1,8 @@
+from stable_baselines import PPO2
+from stable_baselines.gail import ExpertDataset
+
 import gym
 # from stable_baselines.common.policies import MlpPolicy
-from stable_baselines import PPO2
 from stable_baselines.common.vec_env import DummyVecEnv, VecNormalize, SubprocVecEnv
 from stable_baselines.common import set_global_seeds, make_vec_env
 from stable_baselines.common.callbacks import CheckpointCallback
@@ -33,7 +35,7 @@ def make_env(env_id, rank, seed=0):
 
 if __name__ == '__main__':
     env_id = 'gym_docking:docking-v0'
-    num_cpu = 30  # Number of processes to use
+    num_cpu = 4  # Number of processes to use
     # Create the vectorized environment
     env = SubprocVecEnv([make_env(env_id, i) for i in range(num_cpu)])
 
@@ -43,31 +45,33 @@ if __name__ == '__main__':
 
 
     checkpoint_callback = CheckpointCallback(save_freq=int(5e4), save_path='./logs/',
-                                             name_prefix='rl_model_621_d_10M')
+                                             name_prefix='rl_model_621_pre')
 
-    model = PPO2(policy='MlpPolicy', env=env, verbose=1,
-                 tensorboard_log="./ppo2_docking_tensorboard/",
-                 policy_kwargs=dict(
-                     net_arch=[dict(pi=[128, 128], vf=[128, 128])], act_fun=tf.nn.relu),
-                 lam=0.95,
-                 gamma=0.99,  # lower 0.9 ~ 0.99
-                 # n_steps=math.floor(cfg['env']['max_time'] / cfg['env']['ctl_dt']),
-                 n_steps=500,
-                 ent_coef=0.00,
-                 learning_rate=6e-3,
-                 vf_coef=0.5,
-                 max_grad_norm=0.5,
-                 nminibatches=1,
-                 noptepochs=10,
-                 cliprange=0.2)
+    dataset = ExpertDataset(expert_path='./expert_PID/expert_PID.npz',
+                            traj_limitation=1, batch_size=1)
+
+    # model = PPO2(policy='MlpPolicy', env=env, verbose=1,
+    #              tensorboard_log="./ppo2_docking_tensorboard/",
+    #              policy_kwargs=dict(
+    #                  net_arch=[dict(pi=[128, 128], vf=[128, 128])], act_fun=tf.nn.relu),
+    #              lam=0.95,
+    #              gamma=0.99,  # lower 0.9 ~ 0.99
+    #              # n_steps=math.floor(cfg['env']['max_time'] / cfg['env']['ctl_dt']),
+    #              n_steps=1500,
+    #              ent_coef=0.00,
+    #              learning_rate=6e-3,
+    #              vf_coef=0.5,
+    #              max_grad_norm=0.5,
+    #              nminibatches=1,
+    #              noptepochs=10,
+    #              cliprange=0.2)
+    # #
+    # model.pretrain(dataset, n_epochs=100)
 
     # load trained model
-    # model = PPO2.load("./ppo2_docking_621_10M.zip", env=env, tensorboard_log="./ppo2_docking_tensorboard/")
+    model = PPO2.load("./ppo2_docking_621_e_pretrained_100epoch.zip", env=env, tensorboard_log="./ppo2_docking_tensorboard/")
 
     model.learn(total_timesteps=int(10e6), callback=checkpoint_callback)
-    model.save("ppo2_docking_621_d_10M")
-    # env.save("vec_normalize.pkl")
+    model.save("ppo2_docking_621_e_pretrained_10M")
 
-
-# model.learn(total_timesteps=250000)
 

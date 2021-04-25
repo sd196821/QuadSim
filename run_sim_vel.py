@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 # print(rot2quat(euler2rot(np.array([0, 0, 0]))))
-ini_pos = np.array([8, 7.5, 5])
+ini_pos = np.array([8, -50, 5])
 ini_vel = np.array([0, 0, 0])
 ini_att = euler2quat(np.array([deg2rad(0.0), deg2rad(0.0), deg2rad(0.0)]))
 ini_angular_rate = np.array([0, 0, 0])
@@ -16,7 +16,7 @@ ini_state[3:6] = ini_vel
 ini_state[6:10] = ini_att
 ini_state[10:] = ini_angular_rate
 
-pos_des = np.array([8.0, 7.5, 5])  # [x, y, z]
+pos_des = np.array([10, -50, 5])  # [x, y, z]
 vel_des = np.array([0, 0, 0])
 att_des = euler2quat(np.array([deg2rad(0.0), deg2rad(0.0), deg2rad(0.0)]))
 state_des = np.zeros(13)
@@ -49,7 +49,7 @@ for t in range(total_step):
     state_last = state[t - 1, :]
     state_now = quad1.get_state()
     # u = control.att_alt_controller(state_des, state_now)
-    des_vel = kp * (np.array([12, 7.5, 5]) - state_now[0:3]) + kd * ( - state_now[3:6])
+    des_vel = kp * (np.array([10, -50, 5]) - state_now[0:3]) + kd * ( - state_now[3:6])
     if t != 0:
         state_des[3:6] = des_vel
     u = control.vel_controller(state_des, state_now, state_last)

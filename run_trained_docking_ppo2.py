@@ -21,9 +21,9 @@ def info2array(info,tf):
 
 #env = DummyVecEnv([lambda: gym.make("gym_docking:docking-v0")])
 env =  gym.make('gym_docking:docking-v0')
-model = PPO2.load('./logs/rl_model_621_b_10M_1500000_steps.zip')
+model = PPO2.load('./ppo2_docking_621_e_pretrained_2e4epoch.zip')
 
-total_step = 1000
+total_step = 1500
 state = np.zeros((total_step, 12))
 rpy = np.zeros((total_step, 3))
 time = np.zeros(total_step)
@@ -31,6 +31,7 @@ u_all = np.zeros((total_step, 4))
 done = False
 tf = 0
 info_lst = []
+rewards = []
 
 obs = env.reset()
 for t in range(total_step):
@@ -40,12 +41,13 @@ for t in range(total_step):
     state_now = obs.flatten()
     # print('u: ', action)
     # print('s: ', obs.flatten())
-    u_all[t, :] = action.flatten()
+    u_all[t, :] = np.linalg.inv(env.chaser.rotor2control) @ action.flatten() / env.action_max
     state[t, :] = state_now
     # rpy[t, :] = quat2eul(state_now[6:9]))
 
     time[t] = t
     info_lst.append(info)
+    rewards.append(reward)
     # print('obs:', obs)
     # print('vel:', state_now[3:6])
     # print('euler:', state_now[6:9])
@@ -54,12 +56,11 @@ for t in range(total_step):
     # print(state)
     tf = t
     if done:
-        # obs = env.reset()
-    #    tf = t
         break
 
 
 print(state.shape)
+print(np.sum(rewards))
 # time = np.linspace(0, total_step, total_step)
 # Plot Results
 plt.figure()
