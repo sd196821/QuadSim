@@ -21,7 +21,7 @@ def info2array(info,tf):
 
 #env = DummyVecEnv([lambda: gym.make("gym_docking:docking-v0")])
 env =  gym.make('gym_docking:docking-v0')
-model = PPO2.load('./logs/rl_model_621_a_10M_3000000_steps.zip')
+model = PPO2.load('./logs/rl_model_621_b_10M_1500000_steps.zip')
 
 total_step = 1000
 state = np.zeros((total_step, 12))
@@ -53,10 +53,10 @@ for t in range(total_step):
     # print(state_now)
     # print(state)
     tf = t
-    #if done:
+    if done:
         # obs = env.reset()
     #    tf = t
-    #    break
+        break
 
 
 print(state.shape)
