@@ -28,7 +28,7 @@ class HoveringEnv(gym.Env):
         self.ini_state[6:10] = ini_att
         self.ini_state[10:] = ini_angular_rate
 
-        pos_des = np.array([0.0, 5.0, 20.0]) # [x, y, z]
+        pos_des = np.array([0.0, 0.0, 5.0])  # [x, y, z]
         att_des = euler2quat(np.array([deg2rad(0), deg2rad(0), deg2rad(0)]))
         self.state_des = np.zeros(13)
         self.state_des[0:3] = pos_des

@@ -11,6 +11,8 @@ from stable_baselines.common.vec_env import VecEnv, VecFrameStack, SubprocVecEnv
 from stable_baselines.common.callbacks import CheckpointCallback
 from stable_baselines.common.base_class import _UnvecWrapper
 
+from stable_baselines.gail import generate_expert_traj
+
 import numpy as np
 
 def info2array(info,tf):
@@ -240,6 +242,16 @@ def make_env(env_id, rank, seed=0):
     set_global_seeds(seed)
     return _init
 
+def dummy_expert(_obs):
+    """
+    Random agent. It samples actions randomly
+    from the action space of the environment.
+
+    :param _obs: (np.ndarray) Current observation
+    :return: (np.ndarray) action taken by the expert
+    """
+    return env.action_space.sample()
+
 if __name__ == '__main__':
     # env_id = 'gym_docking:docking-v0'
     # num_cpu = 4  # Number of processes to use
@@ -247,6 +259,6 @@ if __name__ == '__main__':
     # env = SubprocVecEnv([make_env(env_id, i) for i in range(num_cpu)])
 
     env = gym.make('gym_docking:docking-v0')
-    env.reset()
-    generate_PID_expert_traj('./expert_PID/expert_PID_new', env, n_episodes=10)
-
+    # env.reset()
+    # generate_PID_expert_traj('./expert_PID/expert_PID_new', env, n_episodes=10)
+    generate_expert_traj(dummy_expert, './expert_PID/random_agent', env, n_episodes=1000)
