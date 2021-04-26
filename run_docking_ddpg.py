@@ -7,6 +7,7 @@ from stable_baselines.common import set_global_seeds, make_vec_env
 from stable_baselines.common.callbacks import CheckpointCallback
 # from stable_baselines.common.evaluation import evaluate_policy
 import tensorflow as tf
+import numpy as np
 
 
 
