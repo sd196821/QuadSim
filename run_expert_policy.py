@@ -62,7 +62,10 @@ for t in range(total_step):
     if t != 0:
         state_des[3:6] = des_vel
     action = control.vel_controller(state_des, env.state_chaser, state_last)
-    u = np.linalg.inv(env.chaser.rotor2control) @ action / env.action_max
+    # u = np.linalg.inv(env.chaser.rotor2control) @ action / env.action_max
+    # u = env.chaser.rotor2control @ (env.action_std * action[:] + env.action_mean)
+    u = (np.linalg.inv(env.chaser.rotor2control) @ action - env.action_mean) / env.action_std
+    # u = action
     obs, reward, done, info = env.step(u)
 
     # state_now = obs.flatten()

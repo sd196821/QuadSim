@@ -21,7 +21,7 @@ def info2array(info,tf):
 
 #env = DummyVecEnv([lambda: gym.make("gym_docking:docking-v0")])
 env =  gym.make('gym_docking:docking-v0')
-model = PPO2.load('./ppo2_docking_621_e_pretrained_2e4epoch.zip')
+model = PPO2.load('./logs/rl_model_621_d_10M_5000000_steps.zip')
 
 total_step = 1500
 state = np.zeros((total_step, 12))
@@ -36,12 +36,13 @@ rewards = []
 obs = env.reset()
 for t in range(total_step):
     action, states = model.predict(obs, deterministic=True)
+    # u = (np.linalg.inv(env.chaser.rotor2control) @ action ) / env.action_std /2.0
     obs, reward, done, info = env.step(action)
 
     state_now = obs.flatten()
     # print('u: ', action)
     # print('s: ', obs.flatten())
-    u_all[t, :] = np.linalg.inv(env.chaser.rotor2control) @ action.flatten() / env.action_max
+    u_all[t, :] = action  # (np.linalg.inv(env.chaser.rotor2control) @ action.flatten() - env.action_mean) / env.action_std
     state[t, :] = state_now
     # rpy[t, :] = quat2eul(state_now[6:9]))
 

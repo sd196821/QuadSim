@@ -1,5 +1,6 @@
 import gym
 from stable_baselines.ddpg.policies import MlpPolicy
+from stable_baselines.ddpg.policies import FeedForwardPolicy
 from stable_baselines.common.noise import NormalActionNoise, OrnsteinUhlenbeckActionNoise, AdaptiveParamNoiseSpec
 from stable_baselines import DDPG
 from stable_baselines.common.vec_env import DummyVecEnv, VecNormalize, SubprocVecEnv
@@ -13,6 +14,12 @@ import numpy as np
 
 # env = DummyVecEnv([lambda: gym.make("gym_docking:docking-v0")])
 
+class CustomDDPGPolicy(FeedForwardPolicy):
+    def __init__(self, *args, **kwargs):
+        super(CustomDDPGPolicy, self).__init__(*args, **kwargs,
+                                           layers=[128, 128],
+                                           layer_norm=False,
+                                           feature_extraction="mlp")
 
 
 def make_env(env_id, rank, seed=0):
@@ -52,17 +59,16 @@ if __name__ == '__main__':
     checkpoint_callback = CheckpointCallback(save_freq=int(5e4), save_path='./logs/',
                                              name_prefix='rl_model_621_ddpg_10M')
 
-    model = DDPG(policy=MlpPolicy, env=env, verbose=1,
+    model = DDPG(policy=CustomDDPGPolicy, env=env, verbose=1,
                  tensorboard_log="./ddpg_docking_tensorboard/",
-                 policy_kwargs=dict(
-                     net_arch=[dict(pi=[128, 128], vf=[128, 128])], act_fun=tf.nn.relu),
                  gamma=0.99,  # lower 0.9 ~ 0.99
                  param_noise=param_noise,
                  action_noise=action_noise,
                  nb_train_steps=100,
                  nb_rollout_steps=1500,
                  nb_eval_steps=1500,
-                 batch_size=10
+                 batch_size=10,
+                 random_exploration=0.3
                  )
                  # n_steps=math.floor(cfg['env']['max_time'] / cfg['env']['ctl_dt']))
 

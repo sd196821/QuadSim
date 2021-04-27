@@ -22,33 +22,35 @@ class DockingEnv(gym.Env):
         self.state_target = np.zeros(13)
         self.rel_state = np.zeros(12)
 
+        self.done = False
+
         # self.steps_beyond_done = None
 
         # Chaser Initial State
-        chaser_ini_pos = np.array([8, -50, 5]) + np.random.uniform(-0.5, 0.5, (3,))
-        chaser_ini_vel = np.array([0, 0, 0]) + np.random.uniform(-0.1, 0.1, (3,))
-        chaser_ini_att = euler2quat(np.array([0.0, 0.0, 0.0]) + np.random.uniform(-0.2, 0.2, (3,)))
-        chaser_ini_angular_rate = np.array([0.0, 0.0, 0.0]) + np.random.uniform(-0.1, 0.1, (3,))
-        chaser_dock_port = np.array([0.1, 0.0, 0.0])
+        chaser_ini_pos = np.array([8, -50, 5])  # + np.random.uniform(-0.5, 0.5, (3,))
+        chaser_ini_vel = np.array([0, 0, 0])   # + np.random.uniform(-0.1, 0.1, (3,))
+        chaser_ini_att = euler2quat(np.array([0.0, 0.0, 0.0]))  # + np.random.uniform(-0.2, 0.2, (3,)))
+        chaser_ini_angular_rate = np.array([0.0, 0.0, 0.0])  # + np.random.uniform(-0.1, 0.1, (3,))
+        self.chaser_dock_port = np.array([0.1, 0.0, 0.0])
         self.chaser_ini_state = np.zeros(13)
         self.chaser_ini_state[0:3] = chaser_ini_pos
         self.chaser_ini_state[3:6] = chaser_ini_vel
         self.chaser_ini_state[6:10] = chaser_ini_att
         self.chaser_ini_state[10:] = chaser_ini_angular_rate
-        self.state_chaser = self.chaser.reset(self.chaser_ini_state, chaser_dock_port)
+        self.state_chaser = self.chaser.reset(self.chaser_ini_state, self.chaser_dock_port)
 
         # Target Initial State
         target_ini_pos = np.array([10, -50, 5])
         target_ini_vel = np.array([0.0, 0.0, 0.0])
         target_ini_att = euler2quat(np.array([0.0, 0.0, 0.0]))
         target_ini_angular_rate = np.array([0.0, 0.0, 0.0])
-        target_dock_port = np.array([-0.1, 0, 0])
+        self.target_dock_port = np.array([-0.1, 0, 0])
         self.target_ini_state = np.zeros(13)
         self.target_ini_state[0:3] = target_ini_pos
         self.target_ini_state[3:6] = target_ini_vel
         self.target_ini_state[6:10] = target_ini_att
         self.target_ini_state[10:] = target_ini_angular_rate
-        self.state_target = self.target.reset(self.target_ini_state, target_dock_port)
+        self.state_target = self.target.reset(self.target_ini_state, self.target_dock_port)
 
         # Target Final State
         target_pos_des = np.array([10, -50, 5])  # [x, y, z]
@@ -77,25 +79,26 @@ class DockingEnv(gym.Env):
 
         # obs rel info: 12x1 [rel_pos, rel_vel, rel_rpy, rel_rpy_rate]
         obs_low = np.array(
-            [-20, -20, -20, -10, -10, -10, -np.pi, -np.pi / 2, -np.pi, -10 * np.pi, -10 * np.pi, -10 * np.pi])
-        obs_high = np.array([20, 20, 20, 10, 10, 10, np.pi, np.pi / 2, np.pi, 10 * np.pi, 10 * np.pi, 10 * np.pi])
+            [-20, -20, -20, -100, -100, -100, -np.pi, -np.pi / 2, -np.pi, -10 * np.pi, -10 * np.pi, -10 * np.pi])
+        obs_high = np.array([20, 20, 20, 100, 100, 100, np.pi, np.pi / 2, np.pi, 10 * np.pi, 10 * np.pi, 10 * np.pi])
 
         # rel_low = np.array([60, 0, 100, 10, 10, 10, 1, 1, 1, 1, 10 * 2 * np.pi, 10 * 2 * np.pi, 10 * 2 * np.pi])
 
-        self.action_space = spaces.Box(low=np.array([0.0, 0.0, 0.0, 0.0]), high=np.array([1.0, 1.0, 1.0, 1.0]),
+        self.action_space = spaces.Box(low=np.array([-1.0, -1.0, -1.0, -1.0]), high=np.array([1.0, 1.0, 1.0, 1.0]),
                                        dtype=np.float32)
         self.observation_space = spaces.Box(low=obs_low, high=obs_high, dtype=np.float32)
 
-        self.action_max = np.array([1.0, 1.0, 1.0, 1.0]) * self.chaser.mass * self.chaser.gravity
-        # self.action_std = np.array([1.0, 1.0, 1.0, 1.0]) * self.chaser.mass * self.chaser.gravity / 2.0
+        # self.action_max = np.array([1.0, 1.0, 1.0, 1.0]) * self.chaser.mass * self.chaser.gravity
+        self.action_mean = np.array([1.0, 1.0, 1.0, 1.0]) * self.chaser.mass * self.chaser.gravity / 2.0
+        self.action_std = np.array([1.0, 1.0, 1.0, 1.0]) * self.chaser.mass * self.chaser.gravity / 2.0
 
         self.seed()
         # self.reset()
 
     def step(self, action):
         reward = 0.0
-        # action_chaser = self.chaser.rotor2control @ (self.action_std * action[:] + self.action_mean)
-        action_chaser = self.chaser.rotor2control @ (self.action_max * action[:])
+        action_chaser = self.chaser.rotor2control @ (self.action_std * action[:] + self.action_mean)
+        # action_chaser = self.chaser.rotor2control @ (self.action_max * action[:])
 
         # action_target = action[4:]
         action_target = self.target_controller.PID(self.target_state_des, self.state_target)
@@ -118,20 +121,20 @@ class DockingEnv(gym.Env):
         # # and (deg2rad(95.0) > np.abs(self.rel_state[8]) > deg2rad(85.0)))
         # and (np.abs(self.rel_state[8]) < deg2rad(10.0)))\
 
-        done_overlimit = bool((np.linalg.norm(self.rel_state[0:3], 2) > 10)
-                              or (np.linalg.norm(self.rel_state[3:6], 2) > 10))
+        done_overlimit = bool((np.linalg.norm(self.rel_state[0:3], 2) > 10))
+                              # or (np.linalg.norm(self.rel_state[3:6], 2) > 10))
         # or np.linalg.norm(self.rel_state[9:], 2) > 5 * np.pi)
 
-        done = done_overlimit
+        self.done = done_overlimit
 
         reward_docked = 0
         if flag_docking:
-            reward_docked = 10.0
+            reward_docked = 25000.0
             # + (0.02-np.linalg.norm(self.rel_state[0:3], 2)) \
             # + (0.01-np.linalg.norm(self.rel_state[3:6], 2)) \
             # + 0.1*(deg2rad(20.0) - np.linalg.norm(self.rel_state[6:9])) \
 
-        # reward_action = -0.0001 * np.linalg.norm(action[:], 2)
+        reward_action = np.linalg.norm(action[:], 2)
 
         info = {'chaser': self.state_chaser,
                 'target': self.state_target,
@@ -139,35 +142,37 @@ class DockingEnv(gym.Env):
                 'done_overlimit': done_overlimit}
         # tbc
         if done_overlimit:
-            reward = -1.0
+            reward = -10.0  # -100.0
         elif (not flag_docking) and (not done_overlimit):
-            # reward = - 0.01 * np.linalg.norm(self.rel_state[0:3], 2) \
-            #          - 0.001 * np.linalg.norm(self.rel_state[3:6], 2) \
-            #          - 0.01 * np.linalg.norm(self.rel_state[6:9], 2) \
-            #          - 0.001 * np.linalg.norm(self.rel_state[9:], 2) \
-            #          + reward_action
-            reward = - 0.01 * np.square(self.rel_state[0]) - 0.01 * np.square(self.rel_state[1]) - 0.01 * np.square(
-                self.rel_state[2]) \
-                     - 0.01 * np.square(self.rel_state[6]) - 0.01 * np.square(self.rel_state[7]) - 0.01 * np.square(
-                self.rel_state[8]) \
-                     - 0.01 * np.linalg.norm(self.rel_state[9:], 2)
+            reward = + 0.001 * np.linalg.norm(self.rel_state[0:3], 2) \
+                     + 0.001 * np.linalg.norm(self.rel_state[3:6], 2) \
+                     + 0.001 * np.linalg.norm(self.rel_state[6:9], 2) \
+                     + 0.001 * np.linalg.norm(self.rel_state[9:], 2) \
+                     - reward_action
+            # reward = -0.5
         # - 0.001 * np.abs(self.rel_state[3]) - 0.001 * np.abs(self.rel_state[4]) - 0.001 * np.abs(self.rel_state[5]) \
         elif flag_docking:
-            reward = reward_docked
+            reward = reward_docked - 0.01 * np.square(self.rel_state[0]) - 0.01 * np.square(self.rel_state[1]) - 0.01 * np.square(
+                self.rel_state[2]) \
+                - 0.01 * np.square(self.rel_state[6]) - 0.01 * np.square(self.rel_state[7]) - 0.01 * np.square(
+                self.rel_state[8]) \
+                - 0.01 * np.linalg.norm(self.rel_state[9:], 2)
+
         else:
             reward = 0.0
             raise AssertionError('Wrong Reward Signal')
 
         # reward -= 0.001
 
-        return self.rel_state, reward, done, info
+        return self.rel_state, reward, self.done, info
 
     def reset(self):
-        self.state_chaser = self.chaser.reset(self.chaser_ini_state)
-        self.state_target = self.target.reset(self.target_ini_state)
+        self.state_chaser = self.chaser.reset(self.chaser_ini_state, self.chaser_dock_port)
+        self.state_target = self.target.reset(self.target_ini_state, self.target_dock_port)
         chaser_dp = self.chaser.get_dock_port_state()  # drone A
         target_dp = self.target.get_dock_port_state()  # drone B
         out = state2rel(self.state_chaser, self.state_target, chaser_dp, target_dp)
+        self.done = False
         return out
 
     def render(self, mode='human'):
