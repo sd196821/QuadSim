@@ -121,7 +121,7 @@ class DockingEnv(gym.Env):
         # # and (deg2rad(95.0) > np.abs(self.rel_state[8]) > deg2rad(85.0)))
         # and (np.abs(self.rel_state[8]) < deg2rad(10.0)))\
 
-        done_overlimit = bool((np.linalg.norm(self.rel_state[0:3], 2) > 10))
+        done_overlimit = bool((np.linalg.norm(self.rel_state[0:3], 2) > 20))
                               # or (np.linalg.norm(self.rel_state[3:6], 2) > 10))
         # or np.linalg.norm(self.rel_state[9:], 2) > 5 * np.pi)
 
@@ -129,7 +129,7 @@ class DockingEnv(gym.Env):
 
         reward_docked = 0
         if flag_docking:
-            reward_docked = 25000.0
+            reward_docked = 10.0
             # + (0.02-np.linalg.norm(self.rel_state[0:3], 2)) \
             # + (0.01-np.linalg.norm(self.rel_state[3:6], 2)) \
             # + 0.1*(deg2rad(20.0) - np.linalg.norm(self.rel_state[6:9])) \
@@ -142,27 +142,28 @@ class DockingEnv(gym.Env):
                 'done_overlimit': done_overlimit}
         # tbc
         if done_overlimit:
-            reward = -10.0  # -100.0
+            reward = -0.01  # -100.0
         elif (not flag_docking) and (not done_overlimit):
-            reward = + 0.001 * np.linalg.norm(self.rel_state[0:3], 2) \
-                     + 0.001 * np.linalg.norm(self.rel_state[3:6], 2) \
-                     + 0.001 * np.linalg.norm(self.rel_state[6:9], 2) \
-                     + 0.001 * np.linalg.norm(self.rel_state[9:], 2) \
-                     - reward_action
+            reward = - 0.001 * np.linalg.norm(self.rel_state[0:3], 2) \
+                     - 0.0001 * np.linalg.norm(self.rel_state[3:6], 2) \
+                     - 0.001 * np.linalg.norm(self.rel_state[6:9], 2) \
+                     - 0.0001 * np.linalg.norm(self.rel_state[9:], 2) \
+                     - 0.0001 * reward_action \
+                     + 0.1
             # reward = -0.5
         # - 0.001 * np.abs(self.rel_state[3]) - 0.001 * np.abs(self.rel_state[4]) - 0.001 * np.abs(self.rel_state[5]) \
         elif flag_docking:
-            reward = reward_docked - 0.01 * np.square(self.rel_state[0]) - 0.01 * np.square(self.rel_state[1]) - 0.01 * np.square(
-                self.rel_state[2]) \
-                - 0.01 * np.square(self.rel_state[6]) - 0.01 * np.square(self.rel_state[7]) - 0.01 * np.square(
-                self.rel_state[8]) \
-                - 0.01 * np.linalg.norm(self.rel_state[9:], 2)
-
+            reward = reward_docked + 0.1
+                #      - 0.01 * np.square(self.rel_state[0]) - 0.01 * np.square(self.rel_state[1]) - 0.01 * np.square(
+                # self.rel_state[2]) \
+                # - 0.01 * np.square(self.rel_state[6]) - 0.01 * np.square(self.rel_state[7]) - 0.01 * np.square(
+                # self.rel_state[8]) \
+                # - 0.01 * np.linalg.norm(self.rel_state[9:], 2)
         else:
             reward = 0.0
             raise AssertionError('Wrong Reward Signal')
 
-        # reward -= 0.001
+        # reward /= 1000.0
 
         return self.rel_state, reward, self.done, info
 
