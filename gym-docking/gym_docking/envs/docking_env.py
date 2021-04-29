@@ -97,6 +97,12 @@ class DockingEnv(gym.Env):
 
     def step(self, action):
         reward = 0.0
+
+        old_state_target = self.state_target
+        old_state_chaser = self.state_chaser
+        old_rel_state = self.rel_state
+        old_chaser_dp = self.chaser.get_dock_port_state()
+
         action_chaser = self.chaser.rotor2control @ (self.action_std * action[:] + self.action_mean)
         # action_chaser = self.chaser.rotor2control @ (self.action_max * action[:])
 
@@ -125,11 +131,11 @@ class DockingEnv(gym.Env):
                               # or (np.linalg.norm(self.rel_state[3:6], 2) > 10))
         # or np.linalg.norm(self.rel_state[9:], 2) > 5 * np.pi)
 
-        self.done = done_overlimit
+        # self.done = done_overlimit
 
         reward_docked = 0
         if flag_docking:
-            reward_docked = 10.0
+            reward_docked = +1.0
             # + (0.02-np.linalg.norm(self.rel_state[0:3], 2)) \
             # + (0.01-np.linalg.norm(self.rel_state[3:6], 2)) \
             # + 0.1*(deg2rad(20.0) - np.linalg.norm(self.rel_state[6:9])) \
@@ -142,12 +148,15 @@ class DockingEnv(gym.Env):
                 'done_overlimit': done_overlimit}
         # tbc
         if done_overlimit:
-            reward = -0.01  # -100.0
+            self.state_chaser[0:3] = old_state_chaser[0:3]
+            self.state_chaser[3:] = 0 * old_state_chaser[3:]
+            self.rel_state = state2rel(self.state_chaser, self.state_target, old_chaser_dp, target_dp)
+            reward = -0.01 * np.sum(np.square(self.rel_state[0:3]))  # -0.01(x,j,tb16) -0.1(x,ent +inf,k, tb17) -10(x,l,z_overlimit)-100.0
         elif (not flag_docking) and (not done_overlimit):
-            reward = - 0.001 * np.linalg.norm(self.rel_state[0:3], 2) \
-                     - 0.0001 * np.linalg.norm(self.rel_state[3:6], 2) \
-                     - 0.001 * np.linalg.norm(self.rel_state[6:9], 2) \
-                     - 0.0001 * np.linalg.norm(self.rel_state[9:], 2) \
+            reward = - 0.001 * np.sum(np.square(self.rel_state[0:3])) \
+                     - 0.0001 * np.sum(np.square(self.rel_state[3:6])) \
+                     - 0.001 * np.sum(np.square(self.rel_state[6:9])) \
+                     - 0.0001 * np.sum(np.square(self.rel_state[9:])) \
                      - 0.0001 * reward_action \
                      + 0.1
             # reward = -0.5
@@ -164,6 +173,7 @@ class DockingEnv(gym.Env):
             raise AssertionError('Wrong Reward Signal')
 
         # reward /= 1000.0
+        self.done = False
 
         return self.rel_state, reward, self.done, info
 
