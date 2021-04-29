@@ -1,17 +1,19 @@
 import gym
-# from stable_baselines.common.policies import MlpPolicy
-from stable_baselines import PPO2
+from stable_baselines.common.policies import MlpPolicy, register_policy
+# from stable_baselines import PPO2
+from rl_baselines.ppo2.ppo2 import PPO2
 from stable_baselines.common.vec_env import DummyVecEnv, VecNormalize, SubprocVecEnv
 from stable_baselines.common import set_global_seeds, make_vec_env
 from stable_baselines.common.callbacks import CheckpointCallback
 # from stable_baselines.common.evaluation import evaluate_policy
 import tensorflow as tf
 
+from stable_baselines import logger
+import rl_baselines.common.util as U
 
 
 # env = DummyVecEnv([lambda: gym.make("gym_docking:docking-v0")])
 # env = gym.make('gym_docking:docking-v0')
-
 
 def make_env(env_id, rank, seed=0):
     """
@@ -32,6 +34,8 @@ def make_env(env_id, rank, seed=0):
     return _init
 
 if __name__ == '__main__':
+    saver = U.ConfigurationSaver(log_dir='./logs')
+    logger.configure(folder=saver.data_dir)
     env_id = 'gym_docking:docking-v0'
     num_cpu = 10  # Number of processes to use
     # Create the vectorized environment
@@ -43,9 +47,9 @@ if __name__ == '__main__':
 
 
     checkpoint_callback = CheckpointCallback(save_freq=int(5e4), save_path='./logs/',
-                                             name_prefix='rl_model_621_n_10M')
+                                             name_prefix='rl_model_621_b_10M')
 
-    model = PPO2(policy='MlpPolicy', env=env, verbose=1,
+    model = PPO2(policy=MlpPolicy, env=env, verbose=1,
                  tensorboard_log="./ppo2_docking_tensorboard/",
                  policy_kwargs=dict(
                      net_arch=[dict(pi=[128, 128], vf=[128, 128])], act_fun=tf.nn.relu),
@@ -65,7 +69,11 @@ if __name__ == '__main__':
     # model = PPO2.load("./ppo2_docking_621_10M.zip", env=env, tensorboard_log="./ppo2_docking_tensorboard/")
 
     model.learn(total_timesteps=int(10e6), callback=checkpoint_callback)
-    model.save("ppo2_docking_621_n_10M")
+
+    # user defined ppo2
+    # model.learn(total_timesteps=int(10e6), logger=logger, log_dir=saver.data_dir)
+
+    model.save("ppo2_docking_621_b_10M")
     # env.save("vec_normalize.pkl")
 
 
