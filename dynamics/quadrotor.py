@@ -7,7 +7,7 @@ class Drone():
 
     def __init__(self):
 
-        self.dt = 0.01
+        self.dt = 0.02
         self.t0 = 0
         self.t = self.t0
         # self.tf = 0.1

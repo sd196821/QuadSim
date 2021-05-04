@@ -29,7 +29,7 @@ class DockingEnv(gym.Env):
 
         # Chaser Initial State
         chaser_ini_pos = np.array([8, -50, 5])  # + np.random.uniform(-0.5, 0.5, (3,))
-        chaser_ini_vel = np.array([0, 0, 0])   # + np.random.uniform(-0.1, 0.1, (3,))
+        chaser_ini_vel = np.array([0, 0, 0])  # + np.random.uniform(-0.1, 0.1, (3,))
         chaser_ini_att = euler2quat(np.array([0.0, 0.0, 0.0]))  # + np.random.uniform(-0.2, 0.2, (3,)))
         chaser_ini_angular_rate = np.array([0.0, 0.0, 0.0])  # + np.random.uniform(-0.1, 0.1, (3,))
         self.chaser_dock_port = np.array([0.1, 0.0, 0.0])
@@ -79,15 +79,17 @@ class DockingEnv(gym.Env):
         target_high = self.target.state_lim_high
 
         # obs rel info: 12x1 [rel_pos, rel_vel, rel_rpy, rel_rpy_rate]
-        obs_low = np.array(
-            [-np.inf, -np.inf, -np.inf, -100, -100, -100, -np.pi, -np.pi / 2, -np.pi, -10 * np.pi, -10 * np.pi, -10 * np.pi])
-        obs_high = np.array([np.inf, np.inf, np.inf, 100, 100, 100, np.pi, np.pi / 2, np.pi, 10 * np.pi, 10 * np.pi, 10 * np.pi])
+        self.obs_low = np.array(
+            [-np.inf, -np.inf, -np.inf, -100, -100, -100, -np.pi, -np.pi / 2, -np.pi, -10 * np.pi, -10 * np.pi,
+             -10 * np.pi])
+        self.obs_high = np.array(
+            [np.inf, np.inf, np.inf, 100, 100, 100, np.pi, np.pi / 2, np.pi, 10 * np.pi, 10 * np.pi, 10 * np.pi])
 
         # rel_low = np.array([60, 0, 100, 10, 10, 10, 1, 1, 1, 1, 10 * 2 * np.pi, 10 * 2 * np.pi, 10 * 2 * np.pi])
 
         self.action_space = spaces.Box(low=np.array([-1.0, -1.0, -1.0, -1.0]), high=np.array([1.0, 1.0, 1.0, 1.0]),
                                        dtype=np.float32)
-        self.observation_space = spaces.Box(low=obs_low, high=obs_high, dtype=np.float32)
+        self.observation_space = spaces.Box(low=self.obs_low, high=self.obs_high, dtype=np.float32)
 
         # self.action_max = np.array([1.0, 1.0, 1.0, 1.0]) * self.chaser.mass * self.chaser.gravity
         self.action_mean = np.array([1.0, 1.0, 1.0, 1.0]) * self.chaser.mass * self.chaser.gravity / 2.0
@@ -121,7 +123,7 @@ class DockingEnv(gym.Env):
         # done_final = False
         # done_overlimit = False
         flag_docking = bool((np.linalg.norm(self.rel_state[0:3], 2) < 0.1)
-                            and (np.linalg.norm(self.rel_state[3:6], 2) < 0.1)
+                            # and (np.linalg.norm(self.rel_state[3:6], 2) < 0.1)
                             and (np.linalg.norm(self.rel_state[6:9], 2) < deg2rad(20)))
         # and (np.linalg.norm(self.rel_state[9:], 2) < deg2rad(10))
         # and (np.abs(self.rel_state[6]) < (deg2rad(10.0)))
@@ -129,22 +131,25 @@ class DockingEnv(gym.Env):
         # # and (deg2rad(95.0) > np.abs(self.rel_state[8]) > deg2rad(85.0)))
         # and (np.abs(self.rel_state[8]) < deg2rad(10.0)))\
 
-        # done_overlimit = bool((np.abs(self.rel_state[0]) >= 3) or (np.abs(self.rel_state[1]) >= 3) or (np.abs(self.rel_state[2]) >= 3))
-                              # or (np.linalg.norm(self.rel_state[3:6], 2) > 10))
+        done_overlimit = bool((np.linalg.norm(self.rel_state[0:3]) >= 3)
+                              or self.state_chaser[2] <= 0.1)
+                              # or np.abs(self.rel_state[6]) > (deg2rad(85.0))
+                              # or np.abs(self.rel_state[7]) > (deg2rad(85.0))
+                              # or np.abs(self.rel_state[8]) > (deg2rad(175.0)))
+        # or (np.linalg.norm(self.rel_state[3:6], 2) > 10))
         # or np.linalg.norm(self.rel_state[9:], 2) > 5 * np.pi)
-        done_overlimit = bool(self.state_chaser[2] <= 0.1)
+        # done_overlimit = bool(self.state_chaser[2] <= 0.1)
 
-        done_overtime = bool(self.t >= 1000)
+        done_overtime = bool(self.t >= 500)
 
         # reward /= 1000.0
         self.done = bool(done_overlimit or done_overtime)  # enb b  self.done=bool(done_overlimit)
-
 
         # self.done = done_overlimit
 
         reward_docked = 0
         if flag_docking:
-            reward_docked = +10.0
+            reward_docked = +100.0
             # + (0.02-np.linalg.norm(self.rel_state[0:3], 2)) \
             # + (0.01-np.linalg.norm(self.rel_state[3:6], 2)) \
             # + 0.1*(deg2rad(20.0) - np.linalg.norm(self.rel_state[6:9])) \
@@ -161,13 +166,13 @@ class DockingEnv(gym.Env):
             # self.state_chaser[3:] = self.chaser_ini_state[3:]
             # self.rel_state = state2rel(self.state_chaser, self.state_target, old_chaser_dp, target_dp)
             # self.reset()
-            reward = -0.02  # * np.sum(np.square(self.rel_state[0:3]))  # -0.01(x,j,tb16) -0.1(x,ent +inf,k, tb17) -10(x,l,z_overlimit)-100.0
+            reward = -0.01  # * np.sum(np.square(self.rel_state[0:3]))  # -0.01(x,j,tb16) -0.1(x,ent +inf,k, tb17) -10(x,l,z_overlimit)-100.0
         elif (not flag_docking) and (not self.done):
-            reward = - 0.002 * np.sum(np.square(self.rel_state[0:3])) \
-                     - 0.0002 * np.sum(np.square(self.rel_state[3:6])) \
-                     - 0.002 * np.sum(np.square(self.rel_state[6:9])) \
-                     - 0.0002 * np.sum(np.square(self.rel_state[9:])) \
-                     - 0.0002 * reward_action \
+            reward = - 0.001 * np.sum(np.square(self.rel_state[0:3])) \
+                     - 0.0001 * np.sum(np.square(self.rel_state[3:6])) \
+                     - 0.001 * np.sum(np.square(self.rel_state[6:9])) \
+                     - 0.0001 * np.sum(np.square(self.rel_state[9:])) \
+                     - 0.0001 * reward_action \
                      + 0.1
             # reward = -0.5
         # - 0.001 * np.abs(self.rel_state[3]) - 0.001 * np.abs(self.rel_state[4]) - 0.001 * np.abs(self.rel_state[5]) \
@@ -182,6 +187,7 @@ class DockingEnv(gym.Env):
             reward = 0.0
             raise AssertionError('Wrong Reward Signal')
 
+        reward += 0.1 * self.t
 
         return self.rel_state, reward, self.done, info
 

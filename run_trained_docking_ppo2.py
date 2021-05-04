@@ -21,9 +21,9 @@ def info2array(info,tf):
 
 #env = DummyVecEnv([lambda: gym.make("gym_docking:docking-v0")])
 env =  gym.make('gym_docking:docking-v0')
-model = PPO2.load('./logs/rl_model_621_f_10M_2000000_steps.zip')
+model = PPO2.load('./logs/best_h_30M_model/best_model.zip')
 
-total_step = 1500
+total_step = 1000
 state = np.zeros((total_step, 12))
 rpy = np.zeros((total_step, 3))
 time = np.zeros(total_step)
@@ -42,7 +42,7 @@ for t in range(total_step):
     state_now = obs.flatten()
     # print('u: ', action)
     # print('s: ', obs.flatten())
-    u_all[t, :] = action  # (np.linalg.inv(env.chaser.rotor2control) @ action.flatten() - env.action_mean) / env.action_std
+    u_all[t, :] = (np.linalg.inv(env.chaser.rotor2control) @ action.flatten() - env.action_mean) / env.action_std
     state[t, :] = state_now
     # rpy[t, :] = quat2eul(state_now[6:9]))
 

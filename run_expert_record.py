@@ -98,22 +98,6 @@ def generate_PID_expert_traj(save_path=None, env=None, n_timesteps=0,
                       "but the number of channel > 4, so it will be saved in the numpy archive "
                       "which can lead to high memory usage".format(obs_space.shape))
 
-    image_ext = 'jpg'
-    if record_images:
-        # We save images as jpg or png, that have only 3/4 color channels
-        if isinstance(env, VecFrameStack) and env.n_stack == 4:
-            # assert env.n_stack < 5, "The current data recorder does no support"\
-            #                          "VecFrameStack with n_stack > 4"
-            image_ext = 'png'
-
-        folder_path = os.path.dirname(save_path)
-        image_folder = os.path.join(folder_path, image_folder)
-        os.makedirs(image_folder, exist_ok=True)
-        print("=" * 10)
-        print("Images will be recorded to {}/".format(image_folder))
-        print("Image shape: {}".format(obs_space.shape))
-        print("=" * 10)
-
     # if n_timesteps > 0 and isinstance(model, BaseRLModel):
     #     model.learn(n_timesteps)
 
@@ -136,16 +120,7 @@ def generate_PID_expert_traj(save_path=None, env=None, n_timesteps=0,
 
     while ep_idx < n_episodes:
         obs_ = obs[0] if is_vec_env else obs
-        if record_images:
-            image_path = os.path.join(image_folder, "{}.{}".format(idx, image_ext))
-            # Convert from RGB to BGR
-            # which is the format OpenCV expect
-            if obs_.shape[-1] == 3:
-                obs_ = cv2.cvtColor(obs_, cv2.COLOR_RGB2BGR)
-            cv2.imwrite(image_path, obs_)
-            observations.append(image_path)
-        else:
-            observations.append(obs_)
+        observations.append(obs_)
 
         # if isinstance(model, BaseRLModel):
         #     action, state = model.predict(obs, state=state, mask=mask)

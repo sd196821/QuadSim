@@ -25,7 +25,7 @@ def info2array(info,tf):
 #env = DummyVecEnv([lambda: gym.make("gym_docking:docking-v0")])
 env =  gym.make('gym_docking:docking-v0')
 
-total_step = 1500
+total_step = 900
 rel_state = np.zeros((total_step, 12))
 state = np.zeros((total_step, 12))
 rpy = np.zeros((total_step, 3))
@@ -87,7 +87,6 @@ for t in range(total_step):
     tf = t
     if done:
         # obs = env.reset()
-    #    tf = t
         break
 
 print('Total Rewards: ', np.sum(rewards))
@@ -108,12 +107,12 @@ plt.ylabel("Velocity/m*s^-1")
 plt.title("Velocity")
 
 # plt.figure()
-# plt.subplot(2, 3, 3)
-# plt.plot(time[0:tf], quat2euler(state[0:tf, 6:10]))
-# plt.legend(['rel phi', 'rel theta', 'rel psi'])
-# plt.xlabel("Time/s")
-# plt.ylabel("Angle/deg")
-# plt.title("Attitude")
+plt.subplot(2, 3, 3)
+plt.plot(time[0:tf], rad2deg(state[0:tf, 6:9]))
+plt.legend(['rel phi', 'rel theta', 'rel psi'])
+plt.xlabel("Time/s")
+plt.ylabel("Angle/deg")
+plt.title("Attitude")
 
 # plt.figure()
 plt.subplot(2, 3, 4)
