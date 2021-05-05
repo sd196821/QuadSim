@@ -9,7 +9,7 @@ from utils.transform import quat2rot, rot2euler, euler2rot, rot2quat, rad2deg, d
 from controller.PIDController import controller
 
 
-class DockingEnv(gym.Env):
+class ImitatingDockingEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
     def __init__(self):
@@ -28,10 +28,10 @@ class DockingEnv(gym.Env):
         # self.steps_beyond_done = None
 
         # Chaser Initial State
-        chaser_ini_pos = np.array([8, -50, 5])  # + np.random.uniform(-0.5, 0.5, (3,))
-        chaser_ini_vel = np.array([0, 0, 0])  # + np.random.uniform(-0.1, 0.1, (3,))
-        chaser_ini_att = euler2quat(np.array([0.0, 0.0, 0.0]))  # + np.random.uniform(-0.2, 0.2, (3,)))
-        chaser_ini_angular_rate = np.array([0.0, 0.0, 0.0])  # + np.random.uniform(-0.1, 0.1, (3,))
+        chaser_ini_pos = np.array([8, -50, 5]) + np.random.uniform(-0.5, 0.5, (3,))
+        chaser_ini_vel = np.array([0, 0, 0]) + np.random.uniform(-0.1, 0.1, (3,))
+        chaser_ini_att = euler2quat(np.array([0.0, 0.0, 0.0]) + np.random.uniform(-0.2, 0.2, (3,)))
+        chaser_ini_angular_rate = np.array([0.0, 0.0, 0.0]) + np.random.uniform(-0.1, 0.1, (3,))
         self.chaser_dock_port = np.array([0.1, 0.0, 0.0])
         self.chaser_ini_state = np.zeros(13)
         self.chaser_ini_state[0:3] = chaser_ini_pos
@@ -171,7 +171,7 @@ class DockingEnv(gym.Env):
             reward = - 0.002 * np.sum(np.square(self.rel_state[0:3]/100)) \
                      - 0.0002 * np.sum(np.square(self.rel_state[3:6]/100)) \
                      - 0.002 * np.sum(np.square(self.rel_state[6:9]/10)) \
-                     - 0.0002 * np.sum(np.square(self.rel_state[9:])/10) \
+                     - 0.0002 * np.sum(np.square(self.rel_state[9:]/10)) \
                      - 0.0002 * reward_action \
                      + 0.1
             # reward = -0.5
@@ -187,7 +187,7 @@ class DockingEnv(gym.Env):
             reward = 0.0
             raise AssertionError('Wrong Reward Signal')
 
-        reward += 0.1 * self.t
+        # reward += 0.1 * self.t
 
         return self.rel_state, reward, self.done, info
 

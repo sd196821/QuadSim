@@ -47,40 +47,40 @@ if __name__ == '__main__':
     # which does exactly the previous steps for you:
     # env = make_vec_env(env, n_envs=num_cpu, seed=0)
     eval_env = gym.make('gym_docking:docking-v0')
-    eval_callback = EvalCallback(eval_env, best_model_save_path='./logs/best_h_30M_model',
-                                 log_path='./logs/best_h_30M_results', eval_freq=500)
+    eval_callback = EvalCallback(eval_env, best_model_save_path='./logs/best_j_10M_model',
+                                 log_path='./logs/best_j_10M_results', eval_freq=500)
 
     checkpoint_callback = CheckpointCallback(save_freq=int(5e4), save_path='./logs/',
-                                             name_prefix='rl_model_621_h_30M')
+                                             name_prefix='rl_model_621_j_10M')
 
     # Create the callback list
     callback = CallbackList([checkpoint_callback, eval_callback])
 
-    # model = PPO2(policy=MlpPolicy, env=env, verbose=1,
-    #              tensorboard_log="./ppo2_docking_tensorboard/",
-    #              policy_kwargs=dict(
-    #                  net_arch=[dict(pi=[128, 128], vf=[128, 128])], act_fun=tf.nn.relu),
-    #              lam=0.95,
-    #              gamma=0.99,  # lower 0.9 ~ 0.99
-    #              # n_steps=math.floor(cfg['env']['max_time'] / cfg['env']['ctl_dt']),
-    #              n_steps=500,
-    #              ent_coef=0.00,
-    #              learning_rate=3e-4,
-    #              vf_coef=0.5,
-    #              max_grad_norm=0.5,
-    #              nminibatches=1,
-    #              noptepochs=10,
-    #              cliprange=0.2)
+    model = PPO2(policy=MlpPolicy, env=env, verbose=1,
+                 tensorboard_log="./ppo2_docking_tensorboard/",
+                 policy_kwargs=dict(
+                     net_arch=[dict(pi=[128, 128], vf=[128, 128])], act_fun=tf.nn.relu),
+                 lam=0.95,
+                 gamma=0.99,  # lower 0.9 ~ 0.99
+                 # n_steps=math.floor(cfg['env']['max_time'] / cfg['env']['ctl_dt']),
+                 n_steps=600,
+                 ent_coef=0.00,
+                 learning_rate=3e-4,
+                 vf_coef=0.5,
+                 max_grad_norm=0.5,
+                 nminibatches=20,
+                 noptepochs=10,
+                 cliprange=0.2)
 
     # load trained model
-    model = PPO2.load("ppo2_docking_621_h_16M.zip", env=env, tensorboard_log="./ppo2_docking_tensorboard/")
+    # model = PPO2.load("ppo2_docking_621_h_16M.zip", env=env, tensorboard_log="./ppo2_docking_tensorboard/")
 
-    model.learn(total_timesteps=int(14e6), callback=callback)
+    model.learn(total_timesteps=int(10e6), callback=callback)
 
     # user defined ppo2
     # model.learn(total_timesteps=int(10e6), logger=logger, log_dir=saver.data_dir)
 
-    model.save("ppo2_docking_621_h_30M")  # [b:reward_dock=10]
+    model.save("ppo2_docking_621_j_10M")  # [b:reward_dock=10]
     # env.save("vec_normalize.pkl")
 
 

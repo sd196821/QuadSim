@@ -20,8 +20,8 @@ def info2array(info,tf):
     return chaser_st, target_st
 
 #env = DummyVecEnv([lambda: gym.make("gym_docking:docking-v0")])
-env =  gym.make('gym_docking:docking-v0')
-model = PPO2.load('./logs/best_h_30M_model/best_model.zip')
+env =  gym.make('gym_docking:docking-v1')
+model = PPO2.load('ppo2_docking_621_PID_pre_1Kepo.zip')
 
 total_step = 1000
 state = np.zeros((total_step, 12))

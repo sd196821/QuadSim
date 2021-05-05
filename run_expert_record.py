@@ -23,7 +23,7 @@ def info2array(info,tf):
         target_st[i, :] = info[i]['target']
     return chaser_st, target_st
 
-env =  gym.make('gym_docking:docking-v0')
+env =  gym.make('gym_docking:docking-v1')
 
 total_step = 1500
 rel_state = np.zeros((total_step, 12))
@@ -112,11 +112,11 @@ def generate_PID_expert_traj(save_path=None, env=None, n_timesteps=0,
     episode_starts.append(True)
     reward_sum = 0.0
     idx = 0
+    idx_per_epi = 0
     # state and mask for recurrent policies
     state, mask = None, None
 
-    if is_vec_env:
-        mask = [True for _ in range(env.num_envs)]
+    # print("is_vec_env: ", is_vec_env)
 
     while ep_idx < n_episodes:
         obs_ = obs[0] if is_vec_env else obs
@@ -125,41 +125,34 @@ def generate_PID_expert_traj(save_path=None, env=None, n_timesteps=0,
         # if isinstance(model, BaseRLModel):
         #     action, state = model.predict(obs, state=state, mask=mask)
         # else:
-        if ep_idx != 0:
-            state_last = (info_lst[ep_idx - 1])['chaser']
+        if idx_per_epi != 0:
+            state_last = (info_lst[idx_per_epi - 1])['chaser']
         else:
             state_last = env.chaser_ini_state
 
         des_vel = kp * (env.state_target[0:3] + np.array([-0.2, 0, 0]) - env.state_chaser[0:3]) + kd * (
             - env.state_chaser[3:6])
-        if ep_idx != 0:
+        if idx_per_epi != 0:
             state_des[3:6] = des_vel
-        action = control.vel_controller(state_des, env.state_chaser, state_last)
-
+        u = control.vel_controller(state_des, env.state_chaser, state_last)
+        action = (np.linalg.inv(env.chaser.rotor2control) @ u - env.action_mean) / env.action_std
         obs, reward, done, info = env.step(action)
-
-        # Use only first env
-        if is_vec_env:
-            mask = [done[0] for _ in range(env.num_envs)]
-            action = np.array([action[0]])
-            reward = np.array([reward[0]])
-            done = np.array([done[0]])
 
         actions.append(action)
         rewards.append(reward)
         info_lst.append(info)
         episode_starts.append(done)
         reward_sum += reward
+        idx_per_epi += 1
         idx += 1
 
         if done:
-            if not is_vec_env:
-                obs = env.reset()
-                # Reset the state in case of a recurrent policy
-                state = None
             obs = env.reset()
+            # Reset the state in case of a recurrent policy
+            state = None
             episode_returns[ep_idx] = reward_sum
             reward_sum = 0.0
+            idx_per_epi = 0
             ep_idx += 1
         print("idx: ", idx, "  ep_idx: ", ep_idx)
 
@@ -235,5 +228,5 @@ if __name__ == '__main__':
 
     env = gym.make('gym_docking:docking-v0')
     # env.reset()
-    # generate_PID_expert_traj('./expert_PID/expert_PID_new', env, n_episodes=10)
-    generate_expert_traj(dummy_expert, './expert_PID/random_agent', env, n_episodes=1000)
+    generate_PID_expert_traj('./expert_PID/expert_PID_new', env, n_episodes=100)
+    # generate_expert_traj(dummy_expert, './expert_PID/random_agent', env, n_episodes=1000)

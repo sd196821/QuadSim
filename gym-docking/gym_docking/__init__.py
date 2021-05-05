@@ -7,3 +7,7 @@ register(id='docking-v0',
 register(id='hovering-v0',
          entry_point='gym_docking.envs:HoveringEnv',
          )
+
+register(id='docking-v1',
+        entry_point='gym_docking.envs:ImitatingDockingEnv',
+        )
