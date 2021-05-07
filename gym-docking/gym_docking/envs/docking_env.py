@@ -24,6 +24,7 @@ class DockingEnv(gym.Env):
         self.t = 0
 
         self.done = False
+        self.reward = 0
 
         # self.steps_beyond_done = None
 
@@ -99,7 +100,9 @@ class DockingEnv(gym.Env):
         # self.reset()
 
     def step(self, action):
+        last_reward = self.reward
         reward = 0.0
+        shaping = 0.0
         self.t += 1
 
         old_state_target = self.state_target
@@ -156,10 +159,7 @@ class DockingEnv(gym.Env):
 
         reward_action = np.linalg.norm(action[:], 2)
 
-        info = {'chaser': self.state_chaser,
-                'target': self.state_target,
-                'flag_docking': flag_docking,
-                'done_overlimit': done_overlimit}
+
         # tbc
         if self.done:
             # self.state_chaser[2] = old_state_chaser[2]
@@ -168,16 +168,19 @@ class DockingEnv(gym.Env):
             # self.reset()
             reward = -1000.0  # * np.sum(np.square(self.rel_state[0:3]))  # -0.01(x,j,tb16) -0.1(x,ent +inf,k, tb17) -10(x,l,z_overlimit)-100.0
         elif (not flag_docking) and (not self.done):
-            reward = - 0.002 * np.sum(np.square(self.rel_state[0:3]/100)) \
-                     - 0.0002 * np.sum(np.square(self.rel_state[3:6]/100)) \
-                     - 0.002 * np.sum(np.square(self.rel_state[6:9]/10)) \
-                     - 0.0002 * np.sum(np.square(self.rel_state[9:])/10) \
-                     - 0.0002 * reward_action \
-                     + 0.1
-            # reward = -0.5
+            reward = - 10.0 * np.sqrt(np.sum(np.square(self.rel_state[0:3]))) \
+                     - 1.0 * np.sqrt(np.sum(np.square(self.rel_state[3:6]))) \
+                     - 10.0 * np.sqrt(np.sum(np.square(self.rel_state[6:9]))) \
+                     - 1.0 * np.sqrt(np.sum(np.square(self.rel_state[9:]))) \
+                     - 1.0 * reward_action \
+                     + 10.0
+            #self.reward = reward - last_reward
         # - 0.001 * np.abs(self.rel_state[3]) - 0.001 * np.abs(self.rel_state[4]) - 0.001 * np.abs(self.rel_state[5]) \
         elif flag_docking:
-            reward = reward_docked
+            reward = reward_docked - 1.0 * np.sum(np.square(self.rel_state[0:3])) \
+                     - 1.0 * np.sum(np.square(self.rel_state[3:6])) \
+                     - 1.0 * np.sum(np.square(self.rel_state[6:9])) \
+                     - 1.0 * np.sum(np.square(self.rel_state[9:]))
                 #      - 0.01 * np.square(self.rel_state[0]) - 0.01 * np.square(self.rel_state[1]) - 0.01 * np.square(
                 # self.rel_state[2]) \
                 # - 0.01 * np.square(self.rel_state[6]) - 0.01 * np.square(self.rel_state[7]) - 0.01 * np.square(
@@ -187,9 +190,15 @@ class DockingEnv(gym.Env):
             reward = 0.0
             raise AssertionError('Wrong Reward Signal')
 
-        reward += 0.1 * self.t
+        self.reward = reward - last_reward
+        #reward += 0.1 * self.t
 
-        return self.rel_state, reward, self.done, info
+        info = {'chaser': self.state_chaser,
+                'target': self.state_target,
+                'flag_docking': flag_docking,
+                'done_overlimit': done_overlimit}
+
+        return self.rel_state, self.reward, self.done, info
 
     def reset(self):
         self.state_chaser = self.chaser.reset(self.chaser_ini_state, self.chaser_dock_port)
@@ -199,6 +208,7 @@ class DockingEnv(gym.Env):
         out = state2rel(self.state_chaser, self.state_target, chaser_dp, target_dp)
         self.done = False
         self.t = 0
+        self.reward = 0.0
         return out
 
     def render(self, mode='human'):
