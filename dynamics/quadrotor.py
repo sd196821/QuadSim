@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.integrate import RK45
-
+from utils.transform import quat2euler, deg2rad, euler2quat
 
 class Drone():
     """Quadrotor class"""
@@ -132,11 +132,41 @@ class Drone():
         while not (self.integrator.status == 'finished'):
             self.integrator.step()
         self.state = self.integrator.y
+        att_flag, att_lim = self.attitude_limit()
+        if att_flag:
+            self.state[6:10] = att_lim
+            self.state[10:] = np.array([0.0, 0.0, 0.0])
+
         self.u = self.u_limit(u)
         self.t = self.integrator.t
         self.integrator = RK45(self.f, self.integrator.t, self.state, self.integrator.t + self.dt)
 
         return self.state
+
+    def attitude_limit(self):
+        """
+        limit attitude
+        :return:
+        """
+        att_overlimit = False
+        euler = quat2euler(self.state[6:10])
+        r = euler[0]
+        p = euler[1]
+        y = euler[2]
+        if np.abs(r) >= deg2rad(85):
+            attitude_limited = euler2quat(np.array([np.sign(r) * deg2rad(85), p, y]))
+            att_overlimit = True
+        if np.abs(p) >= deg2rad(85):
+            attitude_limited = euler2quat(np.array([r,np.sign(p) * deg2rad(85), y]))
+            att_overlimit = True
+        if np.abs(y) >= deg2rad(175):
+            attitude_limited = euler2quat(np.array([r, p, np.sign(y) * deg2rad(175)]))
+            att_overlimit = True
+        if np.abs(r) <= deg2rad(85) and np.abs(p) <= deg2rad(85) and np.abs(y) <= deg2rad(175):
+            attitude_limited = self.state[6:10]
+            att_overlimit = False
+        return att_overlimit, attitude_limited
+
 
     def u_limit(self, u):
         """
