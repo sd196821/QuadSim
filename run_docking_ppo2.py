@@ -7,6 +7,8 @@ from stable_baselines.common import set_global_seeds, make_vec_env
 from stable_baselines.common.callbacks import CallbackList, CheckpointCallback, EvalCallback
 # from stable_baselines.common.evaluation import evaluate_policy
 import tensorflow as tf
+from stable_baselines.common.schedules import LinearSchedule
+from typing import Callable
 
 from stable_baselines import logger
 import rl_baselines.common.util as U
@@ -32,6 +34,30 @@ def make_env(env_id, rank, seed=0):
     set_global_seeds(seed)
     return _init
 
+def linear_schedule(initial_value: float) -> Callable[[float], float]:
+    """
+    Linear learning rate schedule.
+
+    :param initial_value:
+    :return: current learning rate depending on remaining progress
+    """
+    if isinstance(initial_value, str):
+        initial_value = float(initial_value)
+
+    def func(progress_remaining: float) -> float:
+        """
+        Progress will decrease from 1 (beginning) to 0
+        :param progress_remaining: (float)
+        :return: (float)
+        """
+        if progress_remaining >= 0.96:
+            rate = progress_remaining * initial_value
+        else:
+            rate = progress_remaining * float(0.00008)
+        return rate
+
+    return func
+
 if __name__ == '__main__':
     saver = U.ConfigurationSaver(log_dir='./logs')
     logger.configure(folder=saver.data_dir)
@@ -47,39 +73,45 @@ if __name__ == '__main__':
     # which does exactly the previous steps for you:
     # env = make_vec_env(env, n_envs=num_cpu, seed=0)
     eval_env = gym.make('gym_docking:docking-v0')
-    eval_callback = EvalCallback(eval_env, best_model_save_path='./logs/best_shaping_20M_model',
-                                 log_path='./logs/best_shaping_20M_results', eval_freq=500)
+    eval_callback = EvalCallback(eval_env, best_model_save_path='./logs/best_shaping_d_10M_model',
+                                 log_path='./logs/best_shaping_e_10M_results', eval_freq=500)
 
     checkpoint_callback = CheckpointCallback(save_freq=int(5e4), save_path='./logs/',
-                                             name_prefix='rl_model_621_shaping_20M')
+                                             name_prefix='rl_model_621_shaping_e_10M')
 
     # Create the callback list
     callback = CallbackList([checkpoint_callback, eval_callback])
 
-    # model = PPO2(policy=MlpPolicy, env=env, verbose=1,
-    #              tensorboard_log="./ppo2_docking_tensorboard/",
-    #              policy_kwargs=dict(
-    #                  net_arch=[dict(pi=[128, 128], vf=[128, 128])], act_fun=tf.nn.relu),
-    #              lam=0.95,
-    #              gamma=0.99,  # lower 0.9 ~ 0.99
-    #              # n_steps=math.floor(cfg['env']['max_time'] / cfg['env']['ctl_dt']),
-    #              n_steps=600                 ent_coef=0.00,
-    #              learning_rate=3e-4,
-    #              vf_coef=0.5,
-    #              max_grad_norm=0.5,
-    #              nminibatches=20,
-    #              noptepochs=10,
-    #              cliprange=0.2)
+    lr_sch = LinearSchedule(int(10e6), 1.0e-5, 2.5e-4)
+
+
+    model = PPO2(policy=MlpPolicy, env=env, verbose=1,
+                 tensorboard_log="./ppo2_docking_tensorboard/",
+                 policy_kwargs=dict(
+                     net_arch=[128, dict(pi=[128], vf=[128])], act_fun=tf.nn.relu),
+                 lam=0.95,
+                 gamma=0.99,  # lower 0.9 ~ 0.99
+                 # n_steps=math.floor(cfg['env']['max_time'] / cfg['env']['ctl_dt']),
+                 n_steps=600,
+                 ent_coef=0.00,
+                 learning_rate=3e-4,
+                 # learning_rate=lr_sch.value,
+                 # learning_rate=linear_schedule(3e-4),
+                 vf_coef=0.5,
+                 max_grad_norm=0.5,
+                 nminibatches=10,
+                 noptepochs=10,
+                 cliprange=0.2)
 
     # load trained model
-    model = PPO2.load("ppo2_docking_621_shaping_10M", env=env, tensorboard_log="./ppo2_docking_tensorboard/")
+    # model = PPO2.load("ppo2_docking_621_shaping_10M", env=env, tensorboard_log="./ppo2_docking_tensorboard/")
 
     model.learn(total_timesteps=int(10e6), callback=callback)
 
     # user defined ppo2
     # model.learn(total_timesteps=int(10e6), logger=logger, log_dir=saver.data_dir)
 
-    model.save("ppo2_docking_621_shaping_20M")  # [b:reward_dock=10]
+    model.save("ppo2_docking_307_shaping_e_10M")  # [b:reward_dock=10]
     # env.save("vec_normalize.pkl")
 
 

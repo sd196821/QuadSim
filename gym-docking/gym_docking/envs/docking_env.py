@@ -129,16 +129,17 @@ class DockingEnv(gym.Env):
         # done_overlimit = False
         flag_docking = bool((np.linalg.norm(self.rel_state[0:3], 2) < 0.1)
                             and (np.linalg.norm(self.rel_state[3:6], 2) < 0.1)
-                            and (self.rel_state[6] < deg2rad(10))
-                            and (self.rel_state[7] < deg2rad(10))
-                            and (self.rel_state[8] < deg2rad(10)))
+                            and (np.abs(self.rel_state[6]) < deg2rad(10))
+                            and (np.abs(self.rel_state[7]) < deg2rad(10))
+                            and (np.abs(self.rel_state[8]) < deg2rad(10)))
         # and (np.linalg.norm(self.rel_state[9:], 2) < deg2rad(10))
         # and (np.abs(self.rel_state[6]) < (deg2rad(10.0)))
         # and (np.abs(self.rel_state[7]) < (deg2rad(10.0)))
         # # and (deg2rad(95.0) > np.abs(self.rel_state[8]) > deg2rad(85.0)))
         # and (np.abs(self.rel_state[8]) < deg2rad(10.0)))\
 
-        done_overlimit = bool(self.state_chaser[2] <= 0.1)
+        done_overlimit = bool((np.linalg.norm(self.rel_state[0:3]) >= 3)
+                              or self.state_chaser[2] <= 0.1)
             # (np.linalg.norm(self.rel_state[0:3]) >= 3)
             #                   or self.state_chaser[2] <= 0.1)
         # or np.abs(self.rel_state[6]) > (deg2rad(85.0))
@@ -157,12 +158,13 @@ class DockingEnv(gym.Env):
 
         reward_docked = 0
         if flag_docking:
-            reward_docked = +1000.0
-            # + (0.02-np.linalg.norm(self.rel_state[0:3], 2)) \
+            reward_docked = +1.0
+            # + (0.02-np.linalg.n orm(self.rel_state[0:3], 2)) \
             # + (0.01-np.linalg.norm(self.rel_state[3:6], 2)) \
             # + 0.1*(deg2rad(20.0) - np.linalg.norm(self.rel_state[6:9])) \
 
         reward_action = np.linalg.norm(action[:], 2)
+        # reward_action = np.sum(np.abs(action[:]))
 
         # tbc
         # if self.done is not True:
@@ -210,11 +212,11 @@ class DockingEnv(gym.Env):
         # else:
         #     reward = 0.0
         #     raise AssertionError('Wrong Reward Signal')
-        self.shaping = - 100.0 * np.sqrt(np.sum(np.square(self.rel_state[0:3]/100))) \
-                       - 10.0 * np.sqrt(np.sum(np.square(self.rel_state[3:6]))) \
-                       - 100.0 * np.sqrt(np.sum(np.square(self.rel_state[6:9]))) \
-                       - 10.0 * np.sqrt(np.sum(np.square(self.rel_state[9:]))) \
-                       - 1.0 * reward_action
+        self.shaping = - 10.0 * np.sqrt(np.sum(np.square(self.rel_state[0:3] / 3.0))) \
+                       - 1.0 * np.sqrt(np.sum(np.square(self.rel_state[3:6]))) \
+                       - 10.0 * np.sqrt(np.sum(np.square(self.rel_state[6:9] / np.pi))) \
+                       - 1.0 * np.sqrt(np.sum(np.square(self.rel_state[9:]))) \
+                       - 0.1 * reward_action + 1.0 * reward_docked
 
         self.reward = self.shaping - self.last_shaping
         self.last_shaping = self.shaping
