@@ -25,7 +25,7 @@ PID control: $`python run_sim_PID.py`
 1. Training PPO2 controller: $`python train_drl_hover_ppo2.py`
 2. Run trained controller: $`python run_trained_drl_hover_ppo2.py`
 
-# Enviroments
+# Environments
 1.docking-v0: Target drone is hovering with PID controller  
 2.docking-v1: Docking Env for imitation learning  
 3.docking-v2: Target drone is flying in a constant velocity with PID controller  
