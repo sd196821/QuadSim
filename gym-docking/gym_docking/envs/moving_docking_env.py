@@ -59,7 +59,7 @@ class MovingDockingEnv(gym.Env):
         # Target Final State
         target_pos_des = np.array([10, -50, 5])  # [x, y, z]
         target_att_des = euler2quat(np.array([0.0, 0.0, 0.0]))
-        target_vel_des = np.array([0.5, 0.0, 0.0])
+        target_vel_des = np.array([0.2, 0.0, 0.0])
         self.target_state_des = np.zeros(13)
         self.target_state_des[0:3] = target_pos_des
         self.target_state_des[3:6] = target_vel_des
@@ -145,7 +145,7 @@ class MovingDockingEnv(gym.Env):
         # # and (deg2rad(95.0) > np.abs(self.rel_state[8]) > deg2rad(85.0)))
         # and (np.abs(self.rel_state[8]) < deg2rad(10.0)))\
 
-        done_overlimit = bool((np.linalg.norm(self.rel_state[0:3]) >= 15)
+        done_overlimit = bool((np.linalg.norm(self.rel_state[0:3]) >= 10)
                               or self.state_chaser[2] <= 0.1)
         # (np.linalg.norm(self.rel_state[0:3]) >= 3)
         #                   or self.state_chaser[2] <= 0.1)
@@ -173,7 +173,7 @@ class MovingDockingEnv(gym.Env):
         reward_action = np.linalg.norm(action[:], 2)
         # reward_action = np.sum(np.abs(action[:]))
 
-        self.shaping = - 10.0 * np.sqrt(np.sum(np.square(self.rel_state[0:3] / 20))) \
+        self.shaping = - 10.0 * np.sqrt(np.sum(np.square(self.rel_state[0:3] / 10))) \
                        - 1.0 * np.sqrt(np.sum(np.square(self.rel_state[3:6]))) \
                        - 10.0 * np.sqrt(np.sum(np.square(self.rel_state[6:9] / np.pi))) \
                        - 1.0 * np.sqrt(np.sum(np.square(self.rel_state[9:]))) \

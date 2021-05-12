@@ -5,12 +5,14 @@ from stable_baselines.common.vec_env import DummyVecEnv, VecNormalize
 # from stable_baselines.common.evaluation import evaluate_policy
 import numpy as np
 import matplotlib
+
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from utils.transform import quat2rot, rot2euler, euler2rot, rot2quat, rad2deg, deg2rad, quat2euler
 
-def info2array(info,tf):
+
+def info2array(info, tf):
     chaser_st = np.zeros((tf, 13))
     target_st = np.zeros((tf, 13))
     for i in range(tf):
@@ -19,9 +21,11 @@ def info2array(info,tf):
 
     return chaser_st, target_st
 
-#env = DummyVecEnv([lambda: gym.make("gym_docking:docking-v0")])
-env =  gym.make('gym_docking:docking-v0')
-model = PPO2.load('./trained_model/best_model_v0.zip')
+
+# env = DummyVecEnv([lambda: gym.make("gym_docking:docking-v0")])
+
+env = gym.make('gym_docking:docking-v2')
+model = PPO2.load('./logs/best_shaping_moving_a_10M_model/best_model.zip')
 
 total_step = 1000
 state = np.zeros((total_step, 12))
@@ -58,7 +62,6 @@ for t in range(total_step):
     tf = t
     if done:
         break
-
 
 print(state.shape)
 print(np.sum(rewards))
@@ -118,11 +121,11 @@ ax.set_xlabel("relative x")
 ax.set_ylabel("relative y")
 ax.set_zlabel("relative z")
 
-#plt.figure()
-chaser_st, target_st = info2array(info_lst,tf)
+# plt.figure()
+chaser_st, target_st = info2array(info_lst, tf)
 # chaser = info_states
 # print(chaser_st)
-#plt.plot(time[0:tf], (info_lst[0:tf])['chaser'])
+# plt.plot(time[0:tf], (info_lst[0:tf])['chaser'])
 
 chaser_traj_fig = plt.figure()
 ax = Axes3D(chaser_traj_fig)
@@ -138,5 +141,38 @@ ax.set_xlabel("target x")
 ax.set_ylabel("target y")
 ax.set_zlabel("target z")
 
-plt.show()
+plt.figure()
+plt.subplot(2, 2, 1)
+plt.plot(time[0:tf], target_st[0:tf, 0:3])
+plt.legend(['rel x', 'rel y', 'rel z'])
+plt.xlabel("Time/s")
+plt.ylabel("Target Position/m")
+plt.title("Target Position")
 
+# plt.figure()
+plt.subplot(2, 2, 2)
+plt.plot(time[0:tf], target_st[0:tf, 3:6])
+plt.legend(['rel vx', 'rel vy', 'rel vz'])
+plt.xlabel("Time/s")
+plt.ylabel("Target Velocity/m*s^-1")
+plt.title("Target Velocity")
+
+# plt.figure()
+# plt.subplot(2, 3, 3)
+# plt.plot(time[0:tf], rad2deg(quat2euler(target_st[0:tf, 6:10])))
+# plt.legend(['rel phi', 'rel theta', 'rel psi'])
+# plt.xlabel("Time/s")
+# plt.ylabel("Target Angle/deg")
+# plt.title("Target Attitude")
+
+# plt.figure()
+plt.subplot(2, 2, 4)
+plt.plot(time[0:tf], rad2deg(target_st[0:tf, 10:]))
+plt.legend(['rel p', 'rel q', 'rel r'])
+plt.xlabel("Time/s")
+plt.ylabel("Target Angular rate/deg*s^-1")
+plt.title("Target Angular Rates")
+
+
+
+plt.show()

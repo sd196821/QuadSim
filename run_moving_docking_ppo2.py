@@ -73,11 +73,11 @@ if __name__ == '__main__':
     # which does exactly the previous steps for you:
     # env = make_vec_env(env, n_envs=num_cpu, seed=0)
     eval_env = gym.make('gym_docking:docking-v2')
-    eval_callback = EvalCallback(eval_env, best_model_save_path='./logs/best_shaping_moving_a_10M_model',
-                                 log_path='./logs/best_shaping_moving_a_10M_results', eval_freq=500)
+    eval_callback = EvalCallback(eval_env, best_model_save_path='./logs/best_shaping_moving_b_10M_model',
+                                 log_path='./logs/best_shaping_moving_b_10M_results', eval_freq=600)
 
     checkpoint_callback = CheckpointCallback(save_freq=int(5e4), save_path='./logs/',
-                                             name_prefix='rl_model_621_shaping_moving_a_10M')
+                                             name_prefix='rl_model_621_shaping_moving_b_10M')
 
     # Create the callback list
     callback = CallbackList([checkpoint_callback, eval_callback])
