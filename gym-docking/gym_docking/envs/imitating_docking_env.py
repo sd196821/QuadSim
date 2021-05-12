@@ -31,10 +31,10 @@ class ImitatingDockingEnv(gym.Env):
         # self.steps_beyond_done = None
 
         # Chaser Initial State
-        chaser_ini_pos = np.array([8, -50, 5]) + np.random.uniform(-0.5, 0.5, (3,))
-        chaser_ini_vel = np.array([0, 0, 0]) + np.random.uniform(-0.1, 0.1, (3,))
-        chaser_ini_att = euler2quat(np.array([0.0, 0.0, 0.0]) + np.random.uniform(-0.2, 0.2, (3,)))
-        chaser_ini_angular_rate = np.array([0.0, 0.0, 0.0]) + np.random.uniform(-0.1, 0.1, (3,))
+        chaser_ini_pos = np.array([8, -50, 5]) + np.random.uniform(-0.3, 0.3, (3,))
+        chaser_ini_vel = np.array([0, 0, 0]) #+ np.random.uniform(-0.01, 0.01, (3,))
+        chaser_ini_att = euler2quat(np.array([0.0, 0.0, 0.0])) #+ np.random.uniform(-0.2, 0.2, (3,)))
+        chaser_ini_angular_rate = np.array([0.0, 0.0, 0.0]) #+ np.random.uniform(-0.01, 0.01, (3,))
         self.chaser_dock_port = np.array([0.1, 0.0, 0.0])
         self.chaser_ini_state = np.zeros(13)
         self.chaser_ini_state[0:3] = chaser_ini_pos
