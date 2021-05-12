@@ -226,7 +226,7 @@ if __name__ == '__main__':
     # Create the vectorized environment
     # env = SubprocVecEnv([make_env(env_id, i) for i in range(num_cpu)])
 
-    env = gym.make('gym_docking:docking-v0')
+    env = gym.make('gym_docking:docking-v1')
     # env.reset()
-    generate_PID_expert_traj('./expert_PID/expert_PID_new', env, n_episodes=100)
+    generate_PID_expert_traj('./expert_PID/expert_PID_307_rand_initial', env, n_episodes=100)
     # generate_expert_traj(dummy_expert, './expert_PID/random_agent', env, n_episodes=1000)
