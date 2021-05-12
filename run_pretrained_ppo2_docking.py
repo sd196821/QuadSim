@@ -45,33 +45,33 @@ if __name__ == '__main__':
 
 
     checkpoint_callback = CheckpointCallback(save_freq=int(5e4), save_path='./logs/',
-                                             name_prefix='rl_model_621_PID_pre_1K')
+                                             name_prefix='rl_model_621_PID_pre_100')
 
-    dataset = ExpertDataset(expert_path='./expert_PID/expert_PID_new.npz',
+    dataset = ExpertDataset(expert_path='./expert_PID/expert_PID_307_rand_initial.npz',
                             traj_limitation=-1, batch_size=10)
 
     model = PPO2(policy='MlpPolicy', env=env, verbose=1,
-                 tensorboard_log="./ppo2_docking_tensorboard/",
+                 tensorboard_log="./gail_docking_tensorboard/",
                  policy_kwargs=dict(
-                     net_arch=[dict(pi=[128, 128], vf=[128, 128])], act_fun=tf.nn.relu),
+                     net_arch=[128, dict(pi=[128], vf=[128])], act_fun=tf.nn.relu),
                  lam=0.95,
                  gamma=0.99,  # lower 0.9 ~ 0.99
                  # n_steps=math.floor(cfg['env']['max_time'] / cfg['env']['ctl_dt']),
                  n_steps=600,
                  ent_coef=0.00,
-                 learning_rate=1e-4,
+                 learning_rate=3e-4,
                  vf_coef=0.5,
                  max_grad_norm=0.5,
-                 nminibatches=1,
+                 nminibatches=10,
                  noptepochs=10,
                  cliprange=0.2)
     # #
-    model.pretrain(dataset, n_epochs=int(1e3))
+    model.pretrain(dataset, n_epochs=int(1e2))
 
     # load trained model
     # model = PPO2.load("./ppo2_docking_621_random_pre.zip", env=env, tensorboard_log="./ppo2_docking_tensorboard/")
 
     # model.learn(total_timesteps=int(10e6), callback=checkpoint_callback)
-    model.save("ppo2_docking_621_PID_pre_1Kepo")
+    model.save("ppo2_docking_621_PID_pre_100_epo")
 
 

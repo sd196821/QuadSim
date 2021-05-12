@@ -49,7 +49,10 @@ for t in range(total_step):
     state_last = state[t - 1, :]
     state_now = quad1.get_state()
     # u = control.att_alt_controller(state_des, state_now)
-    des_vel = kp * (np.array([10, -50, 5]) - state_now[0:3]) + kd * ( - state_now[3:6])
+
+    # position control
+    # des_vel = kp * (np.array([10, -50, 5]) - state_now[0:3]) + kd * ( - state_now[3:6])
+    des_vel = np.array([0.5, 0, 0])
     if t != 0:
         state_des[3:6] = des_vel
     u = control.vel_controller(state_des, state_now, state_last)
