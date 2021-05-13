@@ -8,6 +8,10 @@ from utils.transform import quat2rot, rot2euler, euler2rot, rot2quat, rad2deg, d
 
 from controller.PIDController import controller
 
+from server.pub_server import pub_server as srv
+from PIL import Image, ImageGrab
+
+import time
 
 class VideoDockingEnv(gym.Env):
     metadata = {'render.modes': ['human']}
@@ -27,6 +31,10 @@ class VideoDockingEnv(gym.Env):
         self.reward = 0.0
         self.shaping = 0.0
         self.last_shaping = 0.0
+
+        self.obs = np.zeros((240, 320, 3), dtype=np.uint8)
+        self.chaser_pub_srv = srv(1)
+        self.target_pub_srv = srv(2)
 
         # self.steps_beyond_done = None
 
@@ -82,17 +90,11 @@ class VideoDockingEnv(gym.Env):
         target_high = self.target.state_lim_high
 
         # obs rel info: 12x1 [rel_pos, rel_vel, rel_rpy, rel_rpy_rate]
-        self.obs_low = np.array(
-            [-np.inf, -np.inf, -np.inf, -100, -100, -100, -np.pi, -np.pi / 2, -np.pi, -10 * np.pi, -10 * np.pi,
-             -10 * np.pi])
-        self.obs_high = np.array(
-            [np.inf, np.inf, np.inf, 100, 100, 100, np.pi, np.pi / 2, np.pi, 10 * np.pi, 10 * np.pi, 10 * np.pi])
-
-        # rel_low = np.array([60, 0, 100, 10, 10, 10, 1, 1, 1, 1, 10 * 2 * np.pi, 10 * 2 * np.pi, 10 * 2 * np.pi])
-
         self.action_space = spaces.Box(low=np.array([-1.0, -1.0, -1.0, -1.0]), high=np.array([1.0, 1.0, 1.0, 1.0]),
                                        dtype=np.float32)
-        self.observation_space = spaces.Box(low=self.obs_low, high=self.obs_high, dtype=np.float32)
+
+        # Gray Image Observation
+        self.observation_space = spaces.Box(low=0, high=255, shape=(240, 320, 3), dtype=np.uint8)
 
         # self.action_max = np.array([1.0, 1.0, 1.0, 1.0]) * self.chaser.mass * self.chaser.gravity
         self.action_mean = np.array([1.0, 1.0, 1.0, 1.0]) * self.chaser.mass * self.chaser.gravity / 2.0
@@ -115,10 +117,19 @@ class VideoDockingEnv(gym.Env):
         action_chaser = self.chaser.rotor2control @ (self.action_std * action[:] + self.action_mean)
         # action_chaser = self.chaser.rotor2control @ (self.action_max * action[:])
 
-        # action_target = action[4:]
         action_target = self.target_controller.PID(self.target_state_des, self.state_target)
         self.state_target = self.target.step(action_target)
         self.state_chaser = self.chaser.step(action_chaser)
+
+        self.chaser_pub_srv.send_state(int(self.t), self.state_chaser)
+        self.target_pub_srv.send_state(int(self.t), self.state_target)
+
+        img = ImageGrab.grab([0, 0, 1920, 1080])
+        # img.convert('L')
+        # time.sleep(0.1)
+        resize_img = img.resize((320, 240), Image.ANTIALIAS)
+        bbb = np.array(resize_img)
+        self.obs = bbb
 
         # dock port relative state
         chaser_dp = self.chaser.get_dock_port_state()  # drone A
@@ -132,86 +143,20 @@ class VideoDockingEnv(gym.Env):
                             and (np.abs(self.rel_state[6]) < deg2rad(10))
                             and (np.abs(self.rel_state[7]) < deg2rad(10))
                             and (np.abs(self.rel_state[8]) < deg2rad(10)))
-        # and (np.linalg.norm(self.rel_state[9:], 2) < deg2rad(10))
-        # and (np.abs(self.rel_state[6]) < (deg2rad(10.0)))
-        # and (np.abs(self.rel_state[7]) < (deg2rad(10.0)))
-        # # and (deg2rad(95.0) > np.abs(self.rel_state[8]) > deg2rad(85.0)))
-        # and (np.abs(self.rel_state[8]) < deg2rad(10.0)))\
 
         done_overlimit = bool((np.linalg.norm(self.rel_state[0:3]) >= 3)
                               or self.state_chaser[2] <= 0.1)
-            # (np.linalg.norm(self.rel_state[0:3]) >= 3)
-            #                   or self.state_chaser[2] <= 0.1)
-        # or np.abs(self.rel_state[6]) > (deg2rad(85.0))
-        # or np.abs(self.rel_state[7]) > (deg2rad(85.0))
-        # or np.abs(self.rel_state[8]) > (deg2rad(175.0)))
-        # or (np.linalg.norm(self.rel_state[3:6], 2) > 10))
-        # or np.linalg.norm(self.rel_state[9:], 2) > 5 * np.pi)
-        # done_overlimit = bool(self.state_chaser[2] <= 0.1)
 
         done_overtime = bool(self.t >= 600)
 
-        # reward /= 1000.0
-        self.done = bool(done_overlimit or done_overtime)  # enb b  self.done=bool(done_overlimit)
-
-        # self.done = done_overlimit
+        self.done = bool(done_overlimit or done_overtime)
 
         reward_docked = 0
         if flag_docking:
             reward_docked = +1.0
-            # + (0.02-np.linalg.n orm(self.rel_state[0:3], 2)) \
-            # + (0.01-np.linalg.norm(self.rel_state[3:6], 2)) \
-            # + 0.1*(deg2rad(20.0) - np.linalg.norm(self.rel_state[6:9])) \
 
         reward_action = np.linalg.norm(action[:], 2)
-        # reward_action = np.sum(np.abs(action[:]))
 
-        # tbc
-        # if self.done is not True:
-        #     # self.state_chaser[2] = old_state_chaser[2] self.state_chaser[3:] = self.chaser_ini_state[3:]
-        #     # self.rel_state = state2rel(self.state_chaser, self.state_target, old_chaser_dp, target_dp) self.reset()
-        #     # reward = 0.0  # * np.sum(np.square(self.rel_state[0:3]))  # -0.01(x,j,tb16) -0.1(x,ent +inf,k,
-        #     # tb17) -10(x,l,z_overlimit)-100.0
-        #     self.shaping = 0.0
-        #     # print("over_limit: ", done_overlimit, " over_time: ", done_overtime, " time: ", self.t)
-        # # elif (not flag_docking) and (not self.done):
-        # else:
-        #     # reward = - 100.0 * np.sqrt(np.sum(np.square(self.rel_state[0:3]))) \
-        #     #          - 10.0 * np.sqrt(np.sum(np.square(self.rel_state[3:6]))) \
-        #     #          - 100.0 * np.sqrt(np.sum(np.square(self.rel_state[6:9]))) \
-        #     #          - 10.0 * np.sqrt(np.sum(np.square(self.rel_state[9:]))) \
-        #     #          - 1.0 * reward_action
-        #     self.shaping = - 100.0 * np.sqrt(np.sum(np.square(self.rel_state[0:3]))) \
-        #                    - 10.0 * np.sqrt(np.sum(np.square(self.rel_state[3:6]))) \
-        #                    - 100.0 * np.sqrt(np.sum(np.square(self.rel_state[6:9]))) \
-        #                    - 10.0 * np.sqrt(np.sum(np.square(self.rel_state[9:]))) \
-        #                    - 1.0 * reward_action
-            # + 10.0
-            # self.reward = reward - last_reward
-        # - 0.001 * np.abs(self.rel_state[3]) - 0.001 * np.abs(self.rel_state[4]) - 0.001 * np.abs(self.rel_state[5]) \
-        # elif flag_docking:
-        #     # reward = - 100.0 * np.sqrt(np.sum(np.square(self.rel_state[0:3]))) \
-        #     #          - 10.0 * np.sqrt(np.sum(np.square(self.rel_state[3:6]))) \
-        #     #          - 100.0 * np.sqrt(np.sum(np.square(self.rel_state[6:9]))) \
-        #     #          - 10.0 * np.sqrt(np.sum(np.square(self.rel_state[9:]))) \
-        #     #          - 1.0 * reward_action
-        #     self.shaping = - 100.0 * np.sqrt(np.sum(np.square(self.rel_state[0:3]))) \
-        #              - 10.0 * np.sqrt(np.sum(np.square(self.rel_state[3:6]))) \
-        #              - 100.0 * np.sqrt(np.sum(np.square(self.rel_state[6:9]))) \
-        #              - 10.0 * np.sqrt(np.sum(np.square(self.rel_state[9:]))) \
-        #              - 1.0 * reward_action
-        #     # reward_docked - 1.0 * np.sum(np.square(self.rel_state[0:3])) \
-        #     #          - 1.0 * np.sum(np.square(self.rel_state[3:6])) \
-        #     #          - 1.0 * np.sum(np.square(self.rel_state[6:9])) \
-        #     #          - 1.0 * np.sum(np.square(self.rel_state[9:]))
-        #         #      - 0.01 * np.square(self.rel_state[0]) - 0.01 * np.square(self.rel_state[1]) - 0.01 * np.square(
-        #         # self.rel_state[2]) \
-        #         # - 0.01 * np.square(self.rel_state[6]) - 0.01 * np.square(self.rel_state[7]) - 0.01 * np.square(
-        #         # self.rel_state[8]) \
-        #         # - 0.01 * np.linalg.norm(self.rel_state[9:], 2)
-        # else:
-        #     reward = 0.0
-        #     raise AssertionError('Wrong Reward Signal')
         self.shaping = - 10.0 * np.sqrt(np.sum(np.square(self.rel_state[0:3] / 3.0))) \
                        - 1.0 * np.sqrt(np.sum(np.square(self.rel_state[3:6]))) \
                        - 10.0 * np.sqrt(np.sum(np.square(self.rel_state[6:9] / np.pi))) \
@@ -228,20 +173,21 @@ class VideoDockingEnv(gym.Env):
                 'flag_docking': flag_docking,
                 'done_overlimit': done_overlimit}
 
-        return self.rel_state, self.reward, self.done, info
+        return self.obs, self.reward, self.done, info
 
     def reset(self):
         self.state_chaser = self.chaser.reset(self.chaser_ini_state, self.chaser_dock_port)
         self.state_target = self.target.reset(self.target_ini_state, self.target_dock_port)
         chaser_dp = self.chaser.get_dock_port_state()  # drone A
         target_dp = self.target.get_dock_port_state()  # drone B
-        out = state2rel(self.state_chaser, self.state_target, chaser_dp, target_dp)
+        self.rel_state = state2rel(self.state_chaser, self.state_target, chaser_dp, target_dp)
         self.done = False
+        self.obs = np.zeros((240, 320, 3), dtype=np.uint8)
         self.t = 0.0
         self.reward = 0.0
         self.shaping = 0.0
         self.last_shaping = 0.0
-        return out
+        return self.obs
 
     def render(self, mode='human'):
         return None

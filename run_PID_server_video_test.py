@@ -7,7 +7,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from server.pub_server import pub_server as srv
 import time
 import cv2
-from PIL import Image
+from PIL import Image, ImageGrab
 import pyautogui as pag
 
 
@@ -45,7 +45,7 @@ state = np.zeros((total_step, 13))
 rpy = np.zeros((total_step, 3))
 sim_time = np.zeros(total_step)
 u_all = np.zeros((total_step, 4))
-
+imgs = []
 # Run simulation
 for t in range(total_step - 2):
     state_last = state[t - 1, :]
@@ -71,10 +71,13 @@ for t in range(total_step - 2):
     # time.sleep(0.2)
     # try:
     # img = cv2.imread('/home/wang/Pictures/Training/' + str(t) + '.png')
-    img = pag.screenshot('./alg_test/a'+str(t)+'.png', region=(0, 0, 1920, 1080))
+    # img = pag.screenshot('./alg_test/a'+str(t)+'.png', region=(0, 0, 1920, 1080))
+    img = ImageGrab.grab([0, 0, 1920, 1080])
     img.convert('L')
     img.resize((320, 240), Image.ANTIALIAS)
     img = np.array(img)
+    # print(img.shape)
+    imgs.append(img)
     # img.show()
     # aaa = ImageGrab.grab()
     # img.show()
@@ -89,7 +92,7 @@ for t in range(total_step - 2):
     #     img2 = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
     # cv2.destroyWindow('step_' + str(t))
-
+print(imgs)
 # Plot Results
 plt.figure()
 plt.subplot(2, 3, 1)
