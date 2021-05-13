@@ -28,6 +28,7 @@ PID control: $`python run_sim_PID.py`
 # Environments
 1.docking-v0: Target drone is hovering with PID controller  
 2.docking-v1: Docking Env for imitation learning  
-3.docking-v2: Target drone is flying in a constant velocity with PID controller. With random initial position. 
+3.docking-v2: Target drone is flying in a constant velocity with PID controller. With random initial position.  
+4.docking-v3: Video Docking with Unity   
 
 

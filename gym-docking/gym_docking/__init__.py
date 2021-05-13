@@ -15,3 +15,7 @@ register(id='docking-v1',
 register(id='docking-v2',
         entry_point='gym_docking.envs:MovingDockingEnv',
         )
+
+register(id='docking-v3',
+        entry_point='gym_docking.envs:VideoDockingEnv',
+        )
